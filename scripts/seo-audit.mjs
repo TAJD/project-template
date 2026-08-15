@@ -13,7 +13,7 @@ const blogDir = path.join(repoRoot, 'content', 'blog');
 const TITLE_MAX = 60;
 const DESCRIPTION_MAX = 160;
 
-export function auditMeta({ title, description, ogImage }) {
+export function auditMeta({ title, description, ogImage }, { requireOgImage = true } = {}) {
   const issues = [];
 
   if (!title) {
@@ -30,14 +30,16 @@ export function auditMeta({ title, description, ogImage }) {
     );
   }
 
-  if (!ogImage) {
+  if (requireOgImage && !ogImage) {
     issues.push('missing OG image reference');
   }
 
   return issues;
 }
 
-export function auditHeadings(body) {
+// `expectH1: false` matches the MDX content convention — the post title lives in
+// frontmatter and is rendered as the page's only H1, so the body must start at H2.
+export function auditHeadings(body, { expectH1 = true } = {}) {
   const headingLevels = body
     .split('\n')
     .map((line) => /^(#{1,6})\s+/.exec(line))
@@ -47,10 +49,12 @@ export function auditHeadings(body) {
   const issues = [];
   const h1Count = headingLevels.filter((level) => level === 1).length;
 
-  if (h1Count === 0) {
+  if (expectH1 && h1Count === 0) {
     issues.push('no H1 heading found');
-  } else if (h1Count > 1) {
+  } else if (expectH1 && h1Count > 1) {
     issues.push(`multiple H1 headings found (${h1Count})`);
+  } else if (!expectH1 && h1Count > 0) {
+    issues.push(`body contains an H1 (${h1Count}) — the title comes from frontmatter, start at H2`);
   }
 
   for (let i = 1; i < headingLevels.length; i++) {
@@ -122,12 +126,18 @@ function main() {
     const relativePath = path.relative(repoRoot, filePath);
     const { frontmatter, body } = parseFrontmatter(readFileSync(filePath, 'utf-8'));
     const issues = [
-      ...auditMeta({
-        title: frontmatter.title,
-        description: frontmatter.description,
-        ogImage: frontmatter.ogImage,
-      }),
-      ...auditHeadings(body),
+      // OG images for posts are rendered at build time by
+      // apps/web/scripts/generate-og.mjs, so frontmatter needn't carry one —
+      // `heroImage` is only an optional override.
+      ...auditMeta(
+        {
+          title: frontmatter.title,
+          description: frontmatter.description,
+          ogImage: frontmatter.ogImage ?? frontmatter.heroImage,
+        },
+        { requireOgImage: false },
+      ),
+      ...auditHeadings(body, { expectH1: false }),
     ];
     printIssues(relativePath, issues);
   }
