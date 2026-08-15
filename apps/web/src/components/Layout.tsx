@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, Link } from 'react-router';
 import { BottomTabBar } from './BottomTabBar';
+import { Search } from './Search';
 
 type Theme = 'light' | 'dark';
 
@@ -39,13 +40,16 @@ export function Layout() {
           <Link to="/">Home</Link>
           <Link to="/blog">Blog</Link>
         </nav>
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className="rounded-md border border-rule px-3 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          {theme === 'light' ? 'Dark mode' : 'Light mode'}
-        </button>
+        <div className="flex items-center gap-2">
+          <Search />
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="rounded-md border border-rule px-3 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            {theme === 'light' ? 'Dark mode' : 'Light mode'}
+          </button>
+        </div>
       </header>
 
       <main className="flex-1 px-4 py-6 pb-20 md:pb-6">
