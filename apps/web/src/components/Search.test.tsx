@@ -84,4 +84,78 @@ describe('Search', () => {
 
     expect(screen.queryByRole('dialog')).toBeNull();
   });
+
+  it('closes the dialog when Escape is pressed', () => {
+    render(<Search />);
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    expect(screen.getByRole('dialog')).toBeTruthy();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('closes the dialog when the backdrop is clicked, but not the panel', () => {
+    render(<Search />);
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(screen.getByRole('textbox', { name: 'Search' }));
+    expect(screen.getByRole('dialog')).toBeTruthy();
+
+    fireEvent.click(dialog);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('focuses the search field on open and restores focus to the trigger on close', () => {
+    render(<Search />);
+    const trigger = screen.getByRole('button', { name: 'Search' });
+
+    fireEvent.click(trigger);
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Search' }));
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('ignores a stale search response that resolves after a newer query', async () => {
+    let resolveSlow: (value: {
+      url: string;
+      excerpt: string;
+      meta: { title: string };
+    }) => void = () => {};
+    const slow = new Promise<{ url: string; excerpt: string; meta: { title: string } }>(
+      (resolve) => {
+        resolveSlow = resolve;
+      },
+    );
+
+    loadPagefindMock.mockResolvedValue({
+      search: vi.fn(async (query: string) => ({
+        results: [
+          {
+            data:
+              query === 'slow'
+                ? () => slow
+                : vi
+                    .fn()
+                    .mockResolvedValue({ url: '/fast', excerpt: 'fast', meta: { title: 'Fast' } }),
+          },
+        ],
+      })),
+    });
+
+    render(<Search />);
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    const input = screen.getByRole('textbox', { name: 'Search' });
+
+    fireEvent.change(input, { target: { value: 'slow' } });
+    fireEvent.change(input, { target: { value: 'fast' } });
+
+    await waitFor(() => expect(screen.getByText('Fast')).toBeTruthy());
+
+    resolveSlow({ url: '/slow', excerpt: 'slow', meta: { title: 'Slow' } });
+    await waitFor(() => expect(screen.getByText('Fast')).toBeTruthy());
+    expect(screen.queryByText('Slow')).toBeNull();
+  });
 });

@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { renderRssFeed, renderAtomFeed } from './generate-feeds.mjs';
+import { renderRssFeed, renderAtomFeed, sortNewestFirst } from './generate-feeds.mjs';
 import { loadPublishedBlogEntries } from './lib/blog-content.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -102,5 +102,20 @@ describe('feed generation against the real content directory', () => {
     it('excludes draft posts', () => {
       expect(xml).not.toContain('A draft post in progress');
     });
+  });
+});
+
+describe('feed item ordering', () => {
+  it('emits items newest-first, not in on-disk order', () => {
+    const entries = sortNewestFirst(loadPublishedBlogEntries(blogContentDir));
+    const dates = entries.map((entry) => entry.frontmatter.pubDate);
+    expect(dates).toEqual([...dates].sort().reverse());
+
+    const { doc, errors } = parseXml(renderRssFeed(entries, BASE_URL));
+    expect(errors).toEqual([]);
+    const itemDates = [...doc.getElementsByTagName('pubDate')].map((node) =>
+      Date.parse(node.textContent),
+    );
+    expect(itemDates).toEqual([...itemDates].sort((a, b) => b - a));
   });
 });

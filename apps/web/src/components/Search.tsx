@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Input } from './Input';
 import { loadPagefind } from './pagefindClient';
@@ -11,9 +11,15 @@ export function Search() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ResultItem[]>([]);
   const [status, setStatus] = useState<Status>('idle');
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Only the newest in-flight search may write results — keystrokes fire
+  // overlapping searches and they can resolve out of order.
+  const latestQueryRef = useRef('');
 
   async function runSearch(value: string) {
     setQuery(value);
+    latestQueryRef.current = value;
     if (!value) {
       setResults([]);
       setStatus('idle');
@@ -24,6 +30,7 @@ export function Search() {
       const pagefind = await loadPagefind();
       const { results: rawResults } = await pagefind.search(value);
       const data = await Promise.all(rawResults.map((result) => result.data()));
+      if (latestQueryRef.current !== value) return;
       setResults(
         data.map((entry) => ({
           url: entry.url,
@@ -33,6 +40,7 @@ export function Search() {
       );
       setStatus('idle');
     } catch {
+      if (latestQueryRef.current !== value) return;
       // Pagefind's index (dist/pagefind/) only exists after a production
       // build — in dev, or a build where indexing didn't run, the dynamic
       // import 404s or throws. Degrade to a message instead of crashing.
@@ -44,12 +52,17 @@ export function Search() {
   function close() {
     setOpen(false);
     setQuery('');
+    latestQueryRef.current = '';
     setResults([]);
     setStatus('idle');
+    // Send keyboard focus back to the control that opened the dialog, so
+    // closing it doesn't drop the user at the top of the document.
+    triggerRef.current?.focus();
   }
 
   useEffect(() => {
     if (!open) return;
+    inputRef.current?.focus();
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') close();
     }
@@ -61,8 +74,11 @@ export function Search() {
     <>
       <button
         type="button"
+        ref={triggerRef}
         onClick={() => setOpen(true)}
         aria-label="Search"
+        aria-haspopup="dialog"
+        aria-expanded={open}
         className="rounded-md border border-rule px-3 py-1 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         Search
@@ -83,6 +99,7 @@ export function Search() {
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <Input
+                  ref={inputRef}
                   label="Search"
                   name="search"
                   value={query}

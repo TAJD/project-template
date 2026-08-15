@@ -93,8 +93,20 @@ ${items}
 `;
 }
 
+// Feed readers show items in document order, so newest first — matching the
+// /blog listing rather than the alphabetical order the loader returns.
+export function sortNewestFirst(entries) {
+  return [...entries].sort((a, b) =>
+    a.frontmatter.pubDate < b.frontmatter.pubDate
+      ? 1
+      : a.frontmatter.pubDate > b.frontmatter.pubDate
+        ? -1
+        : 0,
+  );
+}
+
 function main() {
-  const entries = loadPublishedBlogEntries(blogContentDir);
+  const entries = sortNewestFirst(loadPublishedBlogEntries(blogContentDir));
   const rss = renderRssFeed(entries, DEFAULT_BASE_URL);
   const atom = renderAtomFeed(entries, DEFAULT_BASE_URL);
   writeFileSync(path.join(distDir, 'feed.xml'), rss, 'utf-8');
