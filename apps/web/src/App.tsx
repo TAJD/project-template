@@ -9,6 +9,7 @@ import {
   ResetRequestPage,
   ResetPage,
   DevMailboxPage,
+  SettingsPage,
 } from './modules/account';
 
 const siteConfig: SiteConfig = { name: 'Exemplar' };
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/reset-password" element={<ResetRequestPage />} />
         <Route path="/reset-password/:token" element={<ResetPage />} />
         <Route path="/dev/mailbox" element={<DevMailboxPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Route>
     </Routes>
   );

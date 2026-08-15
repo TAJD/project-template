@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import type { Database } from '../../db';
 import { sessions, users, type User } from '../../db/schema';
 import { hashToken, randomToken } from '../../lib/crypto';
@@ -68,4 +68,21 @@ export async function rotateSession(
 // of the old password kept alive — is invalidated at the same time.
 export async function deleteSessionsForUser(db: Database, userId: string): Promise<void> {
   await db.delete(sessions).where(eq(sessions.userId, userId));
+}
+
+// A password change proves control of the account the same way a reset
+// does, but the user is still sitting in an active session at the time —
+// signing that session out too would just be an annoyance, not a security
+// gain, so only every *other* session is invalidated.
+export async function deleteOtherSessionsForUser(
+  db: Database,
+  userId: string,
+  currentToken: string | undefined,
+): Promise<void> {
+  if (!currentToken) {
+    await deleteSessionsForUser(db, userId);
+    return;
+  }
+  const currentId = await hashToken(currentToken);
+  await db.delete(sessions).where(and(eq(sessions.userId, userId), ne(sessions.id, currentId)));
 }

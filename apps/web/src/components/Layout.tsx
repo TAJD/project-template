@@ -41,6 +41,7 @@ function UserMenu() {
   return (
     <div className="flex items-center gap-2 text-sm">
       <span className="text-muted">{state.user.email}</span>
+      <Link to="/settings">Settings</Link>
       <button type="button" onClick={handleSignOut} className="underline">
         Sign out
       </button>

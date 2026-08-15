@@ -21,8 +21,8 @@ export class AuthApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`/api/auth${path}`, {
+async function apiRequest<T>(fullPath: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(fullPath, {
     credentials: 'include',
     headers: { 'content-type': 'application/json' },
     ...init,
@@ -47,6 +47,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
+}
+
+function request<T>(path: string, init?: RequestInit): Promise<T> {
+  return apiRequest(`/api/auth${path}`, init);
+}
+
+function accountRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  return apiRequest(`/api/account${path}`, init);
 }
 
 export function signUp(email: string, password: string): Promise<AuthResponse> {
@@ -75,4 +83,25 @@ export function requestPasswordReset(email: string): Promise<{ ok: true }> {
 
 export function resetPassword(token: string, password: string): Promise<{ ok: true }> {
   return request(`/reset/${token}`, { method: 'POST', body: JSON.stringify({ password }) });
+}
+
+export function changeEmail(email: string, password: string): Promise<AuthResponse> {
+  return accountRequest('/email', {
+    method: 'PATCH',
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ ok: true }> {
+  return accountRequest('/password', {
+    method: 'PATCH',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
+export function deleteAccount(password: string): Promise<void> {
+  return accountRequest('', { method: 'DELETE', body: JSON.stringify({ password }) });
 }

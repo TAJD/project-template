@@ -12,7 +12,10 @@ export default defineWorkersConfig(async () => {
         workers: {
           wrangler: { configPath: './wrangler.toml' },
           miniflare: {
-            bindings: { TEST_MIGRATIONS: migrations },
+            // TEST_AUTH_TOKEN is injected here rather than in wrangler.toml
+            // so it never ships with a deploy — see the comment in
+            // wrangler.toml and modules/auth/test-auth.ts.
+            bindings: { TEST_MIGRATIONS: migrations, TEST_AUTH_TOKEN: 'local-test-auth-token' },
           },
         },
       },
