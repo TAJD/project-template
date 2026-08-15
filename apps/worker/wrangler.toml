@@ -57,6 +57,17 @@ simple = { limit = 10, period = 60 }
 # apps/worker/src/lib/email.ts on DevMailboxSender and /api/dev/mailbox
 # live by default (see docs/modules/account.md).
 
+# Billing module (PT-14, see docs/modules/billing.md). No real values belong
+# in this repo — this template ships with no Stripe account. STRIPE_PRICE_ID
+# identifies a product, not a credential, so it's fine as a var; the two
+# below are Worker secrets, set only via `wrangler secret put`:
+#   wrangler secret put STRIPE_SECRET_KEY       # sk_test_... / sk_live_...
+#   wrangler secret put STRIPE_WEBHOOK_SECRET   # whsec_..., from the Stripe
+#                                                # dashboard's webhook endpoint
+#                                                # config or `stripe listen`
+#                                                # (see scripts/stripe-tunnel.mjs)
+# STRIPE_PRICE_ID = "price_..."
+
 [build]
 # `apply-d1-migrations-on-build.mjs` only runs `wrangler d1 migrations
 # apply` when the build is a Cloudflare Workers Builds run on `main` (see
