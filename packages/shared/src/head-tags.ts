@@ -21,10 +21,20 @@ export function renderHeadTags(meta: RouteMeta, baseUrl: string = DEFAULT_BASE_U
   lines.push(`<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />`);
 
   for (const entry of meta.jsonLd ?? []) {
-    lines.push(`<script type="application/ld+json">${JSON.stringify(entry)}</script>`);
+    lines.push(`<script type="application/ld+json">${escapeJsonLd(entry)}</script>`);
   }
 
   return lines.join('\n');
+}
+
+// JSON-LD must not be HTML-escaped (that would corrupt the data), so instead
+// escape the characters that could terminate the <script> block or open an HTML
+// comment as JSON unicode escapes — same decoded values, inert as markup.
+function escapeJsonLd(entry: object): string {
+  return JSON.stringify(entry)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
 }
 
 function escapeHtml(value: string): string {

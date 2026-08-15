@@ -50,6 +50,24 @@ describe('renderHeadTags', () => {
     );
   });
 
+  it('escapes markup-significant characters in JSON-LD so it cannot break out of the script tag', () => {
+    const html = renderHeadTags({
+      ...meta,
+      jsonLd: [{ '@type': 'Article', headline: '</script><script>alert(1)</script>' }],
+    });
+    expect(html).not.toContain('</script><script>');
+    expect(html).toContain('\\u003c/script\\u003e');
+
+    const payload = html.slice(
+      html.indexOf('application/ld+json">') + 'application/ld+json">'.length,
+      html.lastIndexOf('</script>'),
+    );
+    expect(JSON.parse(payload)).toEqual({
+      '@type': 'Article',
+      headline: '</script><script>alert(1)</script>',
+    });
+  });
+
   it('omits JSON-LD blocks when not provided', () => {
     const html = renderHeadTags(meta);
     expect(html).not.toContain('application/ld+json');
