@@ -37,6 +37,7 @@ export function Layout() {
         </Link>
         <nav aria-label="Main" className="hidden gap-4 md:flex">
           <Link to="/">Home</Link>
+          <Link to="/blog">Blog</Link>
         </nav>
         <button
           type="button"

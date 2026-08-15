@@ -4,7 +4,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
-import { routes } from '../src/seo.config.ts';
+import { routes as staticRoutes } from '../src/seo.config.ts';
+// See generate-sitemap.mjs for why this script reads blog frontmatter off
+// disk instead of importing the blog module directly.
+import { loadPublishedBlogEntries } from './lib/blog-content.mjs';
+import { buildBlogRoutes } from '../src/modules/blog/build-routes.ts';
 
 const require = createRequire(import.meta.url);
 
@@ -12,6 +16,7 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const webDir = path.resolve(scriptDir, '..');
 const ogDir = path.join(webDir, 'dist', 'og');
 const publicDefaultPath = path.join(webDir, 'public', 'og', 'default.png');
+const blogContentDir = path.resolve(webDir, '..', '..', 'content', 'blog');
 
 const WIDTH = 1200;
 const HEIGHT = 630;
@@ -102,6 +107,8 @@ async function renderPng(title, description) {
 
 async function main() {
   mkdirSync(ogDir, { recursive: true });
+
+  const routes = [...staticRoutes, ...buildBlogRoutes(loadPublishedBlogEntries(blogContentDir))];
 
   for (const route of routes) {
     const png = await renderPng(route.title, route.description);
