@@ -46,6 +46,12 @@ concurrent deliveries of the same event id (Stripe retries on anything but a 2xx
 response) can't both observe "not present yet" and both proceed to reprocess it, because
 only one `INSERT` can ever win the unique constraint.
 
+The claim is taken _before_ the event is applied, which would make any mid-handler
+failure permanent — Stripe's retry would see the claim and skip the work, stranding the
+subscription in a stale state. The webhook route therefore wraps the apply step and calls
+`releaseEvent()` (deleting the claim) plus answers a 500 if it throws, so the retry is
+treated as a first delivery.
+
 ## State machine keyed on subscription status, not event arrival order
 
 This is the requirement the ticket calls out explicitly, with the test case "out-of-order
@@ -64,6 +70,14 @@ rather than on the order events happen to arrive in:
 - The row is only updated if the incoming event's `created` timestamp is _later_ than
   what's already stored. An event describing an earlier point in time than the
   already-applied state is a no-op, however it happens to have arrived.
+- `created` has one-second resolution and Stripe emits several events for the same
+  subscription within one second — cancelling emits `customer.subscription.updated` and
+  `customer.subscription.deleted` together — so equal timestamps are common and cannot be
+  resolved by "strictly later wins" without falling back to arrival order. Ties are broken
+  on status instead: a terminal status (`canceled`, `incomplete_expired`, `unpaid`) beats a
+  same-second non-terminal one, and is never overwritten by it. Without that rule, an
+  `updated` event landing before its same-second `deleted` twin would suppress the
+  cancellation and leave a cancelled subscription reading as `active`.
 
 Concretely: if "updated" (event `created` = T2, status `active`) is delivered first, the
 row is created with `lastEventCreatedAt = T2`. When "created" (event `created` = T1 <

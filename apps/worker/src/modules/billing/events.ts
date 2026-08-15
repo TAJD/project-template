@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import type { Database } from '../../db';
 import { stripeEvents } from '../../db/schema';
 
@@ -76,4 +77,11 @@ export async function claimEvent(db: Database, id: string, type: string): Promis
     .returning({ eventId: stripeEvents.eventId });
 
   return inserted.length > 0;
+}
+
+// Undoes a `claimEvent()` when handling the claimed event failed, so Stripe's
+// retry of that same event id is treated as a first delivery rather than a
+// duplicate to skip.
+export async function releaseEvent(db: Database, id: string): Promise<void> {
+  await db.delete(stripeEvents).where(eq(stripeEvents.eventId, id));
 }

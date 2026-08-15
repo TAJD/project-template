@@ -7,7 +7,7 @@ import { requireUser, type AuthVariables } from '../auth/middleware';
 import { getOrCreateCustomer, findCustomer } from './customers';
 import { createCheckoutSession, createPortalSession, StripeApiError } from './stripe-client';
 import { verifyStripeSignature } from './webhook-signature';
-import { claimEvent, parseStripeEvent, parseSubscriptionObject } from './events';
+import { claimEvent, releaseEvent, parseStripeEvent, parseSubscriptionObject } from './events';
 import { applySubscriptionEvent, getSubscription } from './subscription';
 
 export const billing = new Hono<{ Bindings: Env; Variables: AuthVariables }>();
@@ -110,31 +110,42 @@ billing.post('/webhook', async (c) => {
   const isNewEvent = await claimEvent(db, event.id, event.type);
   if (!isNewEvent) return c.json({ received: true, duplicate: true });
 
-  if (SUBSCRIPTION_EVENT_TYPES.has(event.type)) {
-    const subscription = parseSubscriptionObject(event.data.object);
-    if (subscription) {
-      const customer = await db.query.customers.findFirst({
-        where: (row, { eq }) => eq(row.stripeCustomerId, subscription.customer),
-      });
-
-      if (customer) {
-        await applySubscriptionEvent(
-          db,
-          customer.userId,
-          {
-            stripeSubscriptionId: subscription.id,
-            status: subscription.status,
-            priceId: subscription.priceId,
-            currentPeriodEnd: new Date(subscription.currentPeriodEnd * 1000),
-          },
-          new Date(event.created * 1000),
-        );
-      } else {
-        createLogger(c.env.LOG_LEVEL).warn('stripe webhook: unknown customer', {
-          customerId: subscription.customer,
+  // The dedup row is claimed *before* the event is applied, so a failure
+  // partway through would otherwise be permanent: Stripe retries anything
+  // that isn't a 2xx, but the retry would then see the claim and skip the
+  // work, silently stranding the subscription in a stale state. Releasing
+  // the claim on failure (and answering non-2xx) puts the event back in
+  // Stripe's retry queue.
+  try {
+    if (SUBSCRIPTION_EVENT_TYPES.has(event.type)) {
+      const subscription = parseSubscriptionObject(event.data.object);
+      if (subscription) {
+        const customer = await db.query.customers.findFirst({
+          where: (row, { eq }) => eq(row.stripeCustomerId, subscription.customer),
         });
+
+        if (customer) {
+          await applySubscriptionEvent(
+            db,
+            customer.userId,
+            {
+              stripeSubscriptionId: subscription.id,
+              status: subscription.status,
+              priceId: subscription.priceId,
+              currentPeriodEnd: new Date(subscription.currentPeriodEnd * 1000),
+            },
+            new Date(event.created * 1000),
+          );
+        } else {
+          createLogger(c.env.LOG_LEVEL).warn('stripe webhook: unknown customer', {
+            customerId: subscription.customer,
+          });
+        }
       }
     }
+  } catch (err) {
+    await releaseEvent(db, event.id);
+    return serverError(err, c.env.LOG_LEVEL).error;
   }
 
   return c.json({ received: true });

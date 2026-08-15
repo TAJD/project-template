@@ -382,3 +382,63 @@ describe('POST /api/billing/webhook', () => {
     expect(subscription?.status).toBe('active');
   });
 });
+
+// Stripe's `created` has one-second resolution and a cancellation emits
+// `customer.subscription.updated` and `customer.subscription.deleted` in the
+// same second, so the two can carry an identical timestamp. Both arrival
+// orders must land on "canceled" — a rule of "strictly later wins" would let
+// whichever arrived first stick, leaving a cancelled subscription looking
+// active half the time.
+describe('applySubscriptionEvent same-second tie-break', () => {
+  const T = 1700000000;
+  const base = {
+    stripeSubscriptionId: 'sub_tie',
+    priceId: 'price_test_123',
+    currentPeriodEnd: new Date(1893456000 * 1000),
+  };
+
+  async function applyBoth(email: string, order: 'deleted-first' | 'updated-first') {
+    const db = createDb(env.DB);
+    const { userId } = await signIn(email);
+    const at = new Date(T * 1000);
+    const updated = { ...base, status: 'active' };
+    const deleted = { ...base, status: 'canceled' };
+
+    if (order === 'deleted-first') {
+      await applySubscriptionEvent(db, userId, deleted, at);
+      await applySubscriptionEvent(db, userId, updated, at);
+    } else {
+      await applySubscriptionEvent(db, userId, updated, at);
+      await applySubscriptionEvent(db, userId, deleted, at);
+    }
+
+    return getSubscription(db, userId);
+  }
+
+  it('keeps the cancellation when the deleted event is applied first', async () => {
+    expect((await applyBoth('tie-deleted-first@example.com', 'deleted-first'))?.status).toBe(
+      'canceled',
+    );
+  });
+
+  it('keeps the cancellation when the updated event is applied first', async () => {
+    expect((await applyBoth('tie-updated-first@example.com', 'updated-first'))?.status).toBe(
+      'canceled',
+    );
+  });
+
+  it('does not let a strictly older stale event revive a cancelled subscription', async () => {
+    const db = createDb(env.DB);
+    const { userId } = await signIn('tie-stale@example.com');
+
+    await applySubscriptionEvent(db, userId, { ...base, status: 'canceled' }, new Date(T * 1000));
+    await applySubscriptionEvent(
+      db,
+      userId,
+      { ...base, status: 'active' },
+      new Date((T - 60) * 1000),
+    );
+
+    expect((await getSubscription(db, userId))?.status).toBe('canceled');
+  });
+});
