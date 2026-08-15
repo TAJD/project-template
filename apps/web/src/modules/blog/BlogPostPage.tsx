@@ -18,7 +18,7 @@ export function BlogPostPage() {
       <p className="mt-1 text-sm text-muted">
         {post.frontmatter.pubDate} &middot; {post.readingTimeMinutes} min read
       </p>
-      <div className="mt-4">
+      <div className="blog-content mt-4">
         <Component />
       </div>
     </article>

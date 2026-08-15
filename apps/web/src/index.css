@@ -44,3 +44,11 @@ body {
   color: var(--ink);
   font-family: 'Inter Variable', sans-serif;
 }
+
+/* MDX post bodies can contain GFM tables wider than the viewport; scroll the
+   table itself rather than letting it push the whole page into overflow. */
+.blog-content table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
