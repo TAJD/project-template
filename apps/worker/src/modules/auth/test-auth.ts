@@ -16,10 +16,13 @@ export const testAuth = new Hono<{ Bindings: Env }>();
 // the real signup/password flow in a test suite, without that shortcut ever
 // being reachable somewhere a real attacker could use it as a backdoor:
 //
-// - Tier 1 (`TEST_AUTH_TOKEN`) is for local dev and CI only. It self-404s the
-//   same way PT-12's `/api/dev/mailbox` does — on hostname, independent of
-//   whether the token itself is configured — so spoofing a header can never
-//   make it live in a real deployment.
+// - Tier 1 (`TEST_AUTH_TOKEN`) is for local dev and CI only, behind two
+//   gates that fail independently: the token is never declared in
+//   wrangler.toml and never set as a secret (it comes from `.dev.vars` or
+//   the vitest miniflare bindings), so a deployed Worker has it unset; and
+//   the route additionally self-404s on a non-local hostname the same way
+//   PT-12's `/api/dev/mailbox` does. Either gate alone blocks the route, so
+//   one misconfiguration is not enough to expose it.
 // - Tier 2 (`TEST_LOGIN_SECRET`) is meant to run against a real prod
 //   deployment for smoke tests, so it can't rely on "unreachable in prod" as
 //   its safety net. Instead: it's off unless a deployment deliberately
@@ -27,8 +30,11 @@ export const testAuth = new Hono<{ Bindings: Env }>();
 //   signature over (email, expiry, host) rather than the secret itself, that
 //   signature is only valid for a few minutes, it's scoped to the exact host
 //   it was signed for, and it can only sign in as a user that already
-//   exists — it can't be used to create or take over an arbitrary account.
-//   See docs/modules/account.md for the full threat model.
+//   exists — it can't create accounts. It CAN sign in as any existing user,
+//   so a leaked `TEST_LOGIN_SECRET` is equivalent to a full account
+//   takeover of any known address: treat it like a root credential, only
+//   provision it on deployments that actually run smoke tests, and rotate
+//   it on suspicion. See docs/modules/account.md for the full threat model.
 
 function sessionCookieOptions(c: Context, expires: Date) {
   return {

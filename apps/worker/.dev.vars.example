@@ -1,0 +1,5 @@
+# Copy to `.dev.vars` (gitignored) for local `wrangler dev`.
+# Wrangler loads `.dev.vars` for local runs only — it is never uploaded by
+# `wrangler deploy`, which is exactly why the tier-1 test-auth token lives
+# here instead of in wrangler.toml's [vars].
+TEST_AUTH_TOKEN=local-test-auth-token

@@ -37,15 +37,22 @@ soft-deleting or anonymising it. This is a deliberate choice, not an oversight:
 real signup/password flow to get an authenticated session. It has two tiers because "safe for
 a laptop/CI run" and "safe to point at a real prod deployment" are different threat models:
 
-- **Tier 1 — `POST /api/test-auth/login`, gated by `TEST_AUTH_TOKEN`.** Reachability is gated
-  on `isLocalRequest()` first, exactly like `/api/dev/mailbox` (PT-12) — a deployed Worker is
-  only ever reached on a hostname Cloudflare routes to it, so this 404s in every real
-  deployment regardless of the token's value or whether it leaked. The token itself is a second,
-  independent gate (a wrong or missing token still 401s even locally), and it's fine for its
-  default value to sit in `wrangler.toml` in plain text because the hostname gate is the one
-  that actually holds. It logs in as any email (creating the user on the fly if it doesn't
-  exist yet), bypassing password verification entirely — this is exactly the behaviour that
-  would be a full auth bypass if it ever became reachable in prod, hence the double gate.
+- **Tier 1 — `POST /api/test-auth/login`, gated by `TEST_AUTH_TOKEN`.** It logs in as any email
+  (creating the user on the fly if it doesn't exist yet), bypassing password verification
+  entirely — a full auth bypass if it ever became reachable in prod, so it sits behind two
+  gates that have to fail _independently_ before it opens:
+  1. **The token is never present in a deployment.** It is not declared in `wrangler.toml`'s
+     `[vars]` (which would ship it with every `wrangler deploy`) and is never a
+     `wrangler secret`. Locally it comes from `.dev.vars` (copy `.dev.vars.example`); under
+     test it comes from the miniflare `bindings` block in `apps/worker/vitest.config.ts`. With
+     it unset the route 404s before anything else is checked.
+  2. **`isLocalRequest()`**, exactly like `/api/dev/mailbox` (PT-12) — a deployed Worker is
+     only ever reached on a hostname Cloudflare routes to it, so this 404s in every real
+     deployment even if someone did provision a token by mistake.
+
+  Neither gate is allowed to carry the whole weight: putting the token back into `[vars]` is
+  the specific regression that would collapse this to a single hostname check.
+
 - **Tier 2 — `POST /api/test-auth/prod-login`, gated by `TEST_LOGIN_SECRET`.** Off by default:
   it 404s in every environment until a deployment deliberately provisions the secret (`wrangler
 secret put TEST_LOGIN_SECRET`), the same opt-in pattern `RESEND_API_KEY` uses. Once
@@ -56,15 +63,16 @@ secret put TEST_LOGIN_SECRET`), the same opt-in pattern `RESEND_API_KEY` uses. O
   more than 5 minutes out, so a captured signature stops working shortly after it's minted;
   `host` must match the request's own `Host` header, so a signature minted for one deployment
   can't be replayed against another even if they share a secret; and the target user must
-  already exist — it can sign in as a real (dedicated smoke-test) account, never create or take
-  over an arbitrary one. The residual risk is a leaked `TEST_LOGIN_SECRET` **value** itself,
+  already exist — it can never create an account. It can, however, sign in as _any_ existing
+  user, so it should only be provisioned on deployments that actually run smoke tests. The
+  residual risk is a leaked `TEST_LOGIN_SECRET` **value** itself,
   which is bounded the same way any other Worker secret is: store it only as a `wrangler
 secret`, never in `wrangler.toml`, and rotate it periodically the same as any credential —
   there is no automatic expiry on the secret, only on tokens signed with it.
 
-Rate limiting: tier 1 doesn't rate-limit (its blast radius is already zero in prod via the
-hostname gate, and locally it isn't an attacker-facing surface); the account-settings routes and
-the rest of `/api/auth/*` are.
+Rate limiting: tier 1 doesn't rate-limit (it is unreachable in prod via either gate above, and
+locally it isn't an attacker-facing surface); the account-settings routes and the rest of
+`/api/auth/*` are.
 
 ## Touch-points
 
@@ -107,11 +115,14 @@ apply` only when `WORKERS_CI_BRANCH === 'main'` (Cloudflare Workers Builds); no-
   auth-specific, but nothing else uses D1 yet.
 - **`apps/worker/src/lib/errors.ts`** — added `tooManyRequests()` (429), used by the rate
   limit checks in `modules/auth/routes.ts`.
-- **`apps/worker/src/env.ts`** — also `TEST_AUTH_TOKEN?: string` (plain var) and
+- **`apps/worker/src/env.ts`** — also `TEST_AUTH_TOKEN?: string` and
   `TEST_LOGIN_SECRET?: string` (secret) for two-tier test auth.
-- **`apps/worker/wrangler.toml`** — the `[vars]` block's `TEST_AUTH_TOKEN` default. (No
-  `TEST_LOGIN_SECRET` entry belongs there — it's a real secret, provisioned per-deployment via
-  `wrangler secret put`, same as `RESEND_API_KEY`.)
+- **`apps/worker/.dev.vars.example`** — the local-dev `TEST_AUTH_TOKEN` value, and
+  **`apps/worker/vitest.config.ts`**'s miniflare `bindings` — the CI/test one. Neither is a
+  deployable var; see the tier-1 notes above for why.
+- **`apps/worker/wrangler.toml`** — the comment recording that neither `TEST_AUTH_TOKEN` nor
+  `TEST_LOGIN_SECRET` belongs in `[vars]`. (`TEST_LOGIN_SECRET` is a real secret, provisioned
+  per-deployment via `wrangler secret put`, same as `RESEND_API_KEY`.)
 - **`apps/worker/src/modules/auth/`** — all auth route/session/password/token/dev-mailbox/
   account-settings/test-auth module code.
 - **`apps/web/src/App.tsx`** — imports `SignInPage`/`SignUpPage`/`ResetRequestPage`/
@@ -143,7 +154,8 @@ from './modules/auth'` line and the `app.route('/api/auth', auth)` /
    `RateLimitBindings` (if no other module uses it). Delete `apps/worker/src/lib/email.ts`
    (and its test) unless billing has started reusing `EmailSender` for receipts.
 7. In `apps/worker/wrangler.toml`, remove the `[[unsafe.bindings]]` block for
-   `AUTH_RATE_LIMITER`, the `[vars]` block's `TEST_AUTH_TOKEN`, the `RESEND_API_KEY` secret,
+   `AUTH_RATE_LIMITER`, the `TEST_AUTH_TOKEN` note (plus `apps/worker/.dev.vars.example` and
+   the `TEST_AUTH_TOKEN` entry in `vitest.config.ts`'s bindings), the `RESEND_API_KEY` secret,
    any deployed `TEST_LOGIN_SECRET` secret, and — if no other module reads D1 — the
    `[[d1_databases]]` block and the `apply-d1-migrations-on-build.mjs` step from
    `[build].command`.

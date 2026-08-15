@@ -35,13 +35,14 @@ database_name = "template-db"
 database_id = "00000000-0000-0000-0000-000000000000"
 migrations_dir = "migrations"
 
-[vars]
-# Tier-1 test-auth gate (PT-13). Safe to keep as a plain, checked-in var —
-# `/api/test-auth/login` also requires `isLocalRequest()` to be true, so
-# this value being public does nothing for a real deployment. Override it
-# per-CI-run via `wrangler dev --var TEST_AUTH_TOKEN:...` if you want a
-# non-default value.
-TEST_AUTH_TOKEN = "local-test-auth-token"
+# TEST_AUTH_TOKEN (tier-1 test auth, PT-13) is deliberately NOT declared as a
+# var here. Declaring it would ship it with every `wrangler deploy`, which
+# would leave `isLocalRequest()` as the single gate standing between a real
+# deployment and a password-free login as any existing user. Keeping it
+# undeclared means a deployed Worker fails both gates independently:
+#   - local `wrangler dev`: copy `.dev.vars.example` to `.dev.vars`
+#   - tests: supplied via miniflare bindings in apps/worker/vitest.config.ts
+# Never `wrangler secret put TEST_AUTH_TOKEN`.
 
 # Native Workers Rate Limiting binding (poker-puzzle pattern, PT-3). Auth
 # routes key on client IP; see apps/worker/src/lib/rate-limit.ts.

@@ -9,10 +9,11 @@ export interface Env extends RateLimitBindings {
   // stays live); set -> ResendSender (real sends, `/api/dev/mailbox` 404s).
   RESEND_API_KEY?: string;
   EMAIL_FROM?: string;
-  // Tier-1 test auth (local/CI only, see modules/auth/test-auth.ts): a plain
-  // var, not a secret — it's only useful at all on a hostname
-  // `isLocalRequest()` accepts, so its value being visible in wrangler.toml
-  // isn't a real exposure.
+  // Tier-1 test auth (local/CI only, see modules/auth/test-auth.ts). Supplied
+  // by `.dev.vars` locally and by vitest.config.ts's miniflare bindings in
+  // CI — never by wrangler.toml [vars] or `wrangler secret put`, so a
+  // deployed Worker has it unset and the route 404s on that alone, before
+  // `isLocalRequest()` is even considered.
   TEST_AUTH_TOKEN?: string;
   // Tier-2 test auth (prod-capable): a real Worker secret
   // (`wrangler secret put TEST_LOGIN_SECRET`), unset by default so the
