@@ -24,6 +24,26 @@ export function injectHeadTags(html, headContent) {
   return `${before}\n${headContent}\n${after}`;
 }
 
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// dist/index.html is a client-rendered SPA shell — <div id="root"></div> is
+// empty until React hydrates, so it has nothing for Pagefind (which reads
+// static HTML) to index. Give it a hidden, real (non-fake) snapshot of the
+// home route's title/description so the site has at least one indexable page.
+export function injectBodyContent(html, bodyContent) {
+  const bodyCloseIndex = html.lastIndexOf('</body>');
+  if (bodyCloseIndex === -1) {
+    throw new Error('Could not find </body> in HTML');
+  }
+  return `${html.slice(0, bodyCloseIndex)}${bodyContent}\n${html.slice(bodyCloseIndex)}`;
+}
+
 function main() {
   if (!existsSync(distIndexPath)) {
     console.error(`dist/index.html not found at ${distIndexPath}. Run vite build first.`);
@@ -38,7 +58,9 @@ function main() {
 
   const headContent = renderHeadTags(homeRoute);
   const html = readFileSync(distIndexPath, 'utf-8');
-  const updated = injectHeadTags(html, headContent);
+  const withHead = injectHeadTags(html, headContent);
+  const bodyContent = `<div data-pagefind-body hidden><h1>${escapeHtml(homeRoute.title)}</h1><p>${escapeHtml(homeRoute.description)}</p></div>`;
+  const updated = injectBodyContent(withHead, bodyContent);
   writeFileSync(distIndexPath, updated, 'utf-8');
   console.log(`Prerendered head tags for "${homeRoute.path}" into dist/index.html`);
 }
