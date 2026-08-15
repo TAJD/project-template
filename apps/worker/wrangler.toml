@@ -43,6 +43,12 @@ type = "ratelimit"
 namespace_id = "1001"
 simple = { limit = 10, period = 60 }
 
+# RESEND_API_KEY is a Worker secret, not a var here — set it with
+# `wrangler secret put RESEND_API_KEY` for real deployments only. Its
+# absence in every local/dev/CI environment is what keeps
+# apps/worker/src/lib/email.ts on DevMailboxSender and /api/dev/mailbox
+# live by default (see docs/modules/account.md).
+
 [build]
 # `apply-d1-migrations-on-build.mjs` only runs `wrangler d1 migrations
 # apply` when the build is a Cloudflare Workers Builds run on `main` (see

@@ -1,13 +1,16 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
+import { eq } from 'drizzle-orm';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import type { Env } from '../../env';
 import { createDb } from '../../db';
-import { users } from '../../db/schema';
+import { users, type User } from '../../db/schema';
 import { badRequest, serverError, tooManyRequests, unauthorized } from '../../lib/errors';
+import { createEmailSender } from '../../lib/email';
 import { hashPassword, verifyPassword } from './password';
-import { SESSION_COOKIE, deleteSession, rotateSession } from './session';
+import { SESSION_COOKIE, deleteSession, deleteSessionsForUser, rotateSession } from './session';
 import { requireUser, type AuthVariables } from './middleware';
+import { createAuthToken, consumeAuthToken } from './tokens';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
@@ -40,6 +43,10 @@ function sessionCookieOptions(c: Context, expires: Date) {
     path: '/',
     expires,
   };
+}
+
+function serializeUser(user: User) {
+  return { id: user.id, email: user.email, emailVerified: Boolean(user.emailVerifiedAt) };
 }
 
 async function checkRateLimit(
@@ -88,7 +95,7 @@ auth.post('/signup', async (c) => {
     const { token, expiresAt } = await rotateSession(db, undefined, id);
     setCookie(c, SESSION_COOKIE, token, sessionCookieOptions(c, expiresAt));
 
-    return c.json({ user: { id, email: credentials.email } }, 201);
+    return c.json({ user: { id, email: credentials.email, emailVerified: false } }, 201);
   } catch (err) {
     return serverError(err, c.env.LOG_LEVEL).error;
   }
@@ -125,7 +132,7 @@ auth.post('/login', async (c) => {
     const { token, expiresAt } = await rotateSession(db, oldToken, user.id);
     setCookie(c, SESSION_COOKIE, token, sessionCookieOptions(c, expiresAt));
 
-    return c.json({ user: { id: user.id, email: user.email } });
+    return c.json({ user: serializeUser(user) });
   } catch (err) {
     return serverError(err, c.env.LOG_LEVEL).error;
   }
@@ -143,5 +150,115 @@ auth.post('/logout', async (c) => {
 
 auth.get('/me', requireUser, (c) => {
   const user = c.get('user');
-  return c.json({ user: { id: user.id, email: user.email } });
+  return c.json({ user: serializeUser(user) });
+});
+
+auth.post('/verify/request', requireUser, async (c) => {
+  const user = c.get('user');
+  if (user.emailVerifiedAt) return c.json({ ok: true });
+
+  const db = createDb(c.env.DB);
+  try {
+    const { token } = await createAuthToken(db, user.id, 'verify');
+    const verifyUrl = new URL(`/api/auth/verify/${token}`, c.req.url).toString();
+    await createEmailSender(c.env, db).send({
+      to: user.email,
+      subject: 'Verify your email address',
+      text: `Verify your email address: ${verifyUrl}`,
+      html: `<p>Verify your email address: <a href="${verifyUrl}">${verifyUrl}</a></p>`,
+    });
+
+    return c.json({ ok: true });
+  } catch (err) {
+    return serverError(err, c.env.LOG_LEVEL).error;
+  }
+});
+
+auth.get('/verify/:token', async (c) => {
+  const token = c.req.param('token');
+  const db = createDb(c.env.DB);
+
+  const user = await consumeAuthToken(db, token, 'verify');
+  if (!user) return badRequest('Invalid or expired verification link').error;
+
+  await db.update(users).set({ emailVerifiedAt: new Date() }).where(eq(users.id, user.id));
+
+  return c.redirect('/?verified=1');
+});
+
+auth.post('/reset/request', async (c) => {
+  if (!(await checkRateLimit(c, 'reset'))) return tooManyRequests().error;
+
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return badRequest('Invalid JSON body').error;
+  }
+
+  const { email } = (typeof body === 'object' && body !== null ? body : {}) as Record<
+    string,
+    unknown
+  >;
+  if (typeof email !== 'string') return badRequest('email is required').error;
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const db = createDb(c.env.DB);
+
+  try {
+    const user = await db.query.users.findFirst({
+      where: (u, { eq: eqOp }) => eqOp(u.email, normalizedEmail),
+    });
+
+    if (user) {
+      const { token } = await createAuthToken(db, user.id, 'reset');
+      const resetUrl = new URL(`/reset-password/${token}`, c.req.url).toString();
+      await createEmailSender(c.env, db).send({
+        to: user.email,
+        subject: 'Reset your password',
+        text: `Reset your password: ${resetUrl}`,
+        html: `<p>Reset your password: <a href="${resetUrl}">${resetUrl}</a></p>`,
+      });
+    }
+
+    // Same response whether or not the account exists, so this endpoint
+    // can't be used to enumerate registered emails.
+    return c.json({ ok: true });
+  } catch (err) {
+    return serverError(err, c.env.LOG_LEVEL).error;
+  }
+});
+
+auth.post('/reset/:token', async (c) => {
+  const token = c.req.param('token');
+
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return badRequest('Invalid JSON body').error;
+  }
+
+  const { password } = (typeof body === 'object' && body !== null ? body : {}) as Record<
+    string,
+    unknown
+  >;
+  if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
+    return badRequest(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`).error;
+  }
+
+  const db = createDb(c.env.DB);
+
+  try {
+    const user = await consumeAuthToken(db, token, 'reset');
+    if (!user) return badRequest('Invalid or expired reset link').error;
+
+    const passwordHash = await hashPassword(password);
+    await db.update(users).set({ passwordHash }).where(eq(users.id, user.id));
+    await deleteSessionsForUser(db, user.id);
+
+    return c.json({ ok: true });
+  } catch (err) {
+    return serverError(err, c.env.LOG_LEVEL).error;
+  }
 });
