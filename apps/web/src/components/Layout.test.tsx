@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
-import { Layout } from './Layout';
+import { Layout, initialTheme } from './Layout';
 
 function renderLayout() {
   return render(
@@ -60,5 +60,14 @@ describe('Layout', () => {
 
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     expect(screen.getByRole('button', { name: /light mode/i })).toBeTruthy();
+  });
+
+  it('does not throw and defaults to light when window is unavailable (SSR/prerender)', () => {
+    vi.stubGlobal('window', undefined);
+
+    expect(() => initialTheme()).not.toThrow();
+    expect(initialTheme()).toBe('light');
+
+    vi.unstubAllGlobals();
   });
 });
