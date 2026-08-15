@@ -1,0 +1,10 @@
+# Exemplar
+
+> A production-ready starting point for new products.
+
+This is a template site. Replace this file's content with a real description
+and links once the project has real pages.
+
+## Pages
+
+- [Home](https://example.com/)
