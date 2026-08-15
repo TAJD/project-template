@@ -6,6 +6,7 @@ dist-ssr
 coverage
 *.tsbuildinfo
 *.local
+.dev.vars
 .DS_Store
 *.log
 .vscode/*
