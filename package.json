@@ -12,6 +12,8 @@
     "lint": "eslint .",
     "typecheck": "pnpm -r run typecheck",
     "test": "pnpm -r run test",
+    "build": "pnpm -r run build",
+    "deploy": "pnpm run build && pnpm --filter @template/worker exec wrangler deploy",
     "prepare": "husky",
     "postinstall": "pnpm --filter @template/shared run build"
   },
