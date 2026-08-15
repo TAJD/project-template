@@ -1,4 +1,13 @@
-import { AuthApiError, fetchMe, signIn, signOut, signUp } from './api';
+import {
+  AuthApiError,
+  changeEmail,
+  changePassword,
+  deleteAccount,
+  fetchMe,
+  signIn,
+  signOut,
+  signUp,
+} from './api';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -73,5 +82,53 @@ describe('account api', () => {
     const { user } = await fetchMe();
 
     expect(user.id).toBe('2');
+  });
+
+  it('changeEmail PATCHes /api/account/email', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ user: { id: '1', email: 'new@example.com' } }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { user } = await changeEmail('new@example.com', 'password1');
+
+    expect(user.email).toBe('new@example.com');
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/account/email',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ email: 'new@example.com', password: 'password1' }),
+      }),
+    );
+  });
+
+  it('changePassword PATCHes /api/account/password', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ ok: true }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await changePassword('oldpass1', 'newpass1');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/account/password',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ currentPassword: 'oldpass1', newPassword: 'newpass1' }),
+      }),
+    );
+  });
+
+  it('deleteAccount DELETEs /api/account', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await deleteAccount('password1');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/account',
+      expect.objectContaining({
+        method: 'DELETE',
+        body: JSON.stringify({ password: 'password1' }),
+      }),
+    );
   });
 });
