@@ -1,5 +1,11 @@
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { injectHeadTags, injectBodyContent } from './prerender.mjs';
+import {
+  injectHeadTags,
+  injectBodyContent,
+  markdownToIndexableText,
+  outputPathForRoute,
+} from './prerender.mjs';
 
 describe('injectHeadTags', () => {
   it('replaces the content between the seo:head markers', () => {
@@ -30,5 +36,34 @@ describe('injectBodyContent', () => {
 
   it('throws when </body> is missing', () => {
     expect(() => injectBodyContent('<html></html>', '<div>x</div>')).toThrow();
+  });
+});
+
+describe('markdownToIndexableText', () => {
+  it('drops fenced code blocks and markdown syntax, keeping prose', () => {
+    const text = markdownToIndexableText(
+      '## Why\n\nSome **bold** prose with a [link](https://example.com).\n\n```ts\nconst secret = 1;\n```\n\n- [ ] a task\n',
+    );
+    expect(text).toContain('Why');
+    expect(text).toContain('Some bold prose with a link.');
+    expect(text).toContain('a task');
+    expect(text).not.toContain('const secret');
+    expect(text).not.toContain('```');
+  });
+});
+
+describe('outputPathForRoute', () => {
+  it('writes the home route to dist/index.html', () => {
+    expect(outputPathForRoute('dist', '/')).toBe(path.join('dist', 'index.html'));
+  });
+
+  it('writes a nested route to its own directory index.html', () => {
+    expect(outputPathForRoute('dist', '/blog/my-post')).toBe(
+      path.join('dist', 'blog', 'my-post', 'index.html'),
+    );
+  });
+
+  it('tolerates a trailing slash', () => {
+    expect(outputPathForRoute('dist', '/blog/')).toBe(path.join('dist', 'blog', 'index.html'));
   });
 });

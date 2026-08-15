@@ -47,6 +47,24 @@ test('auditHeadings does not flag a well-formed heading structure', () => {
   assert.deepEqual(issues, []);
 });
 
+test('auditHeadings with expectH1:false accepts an MDX body that starts at H2', () => {
+  const issues = auditHeadings('## Section\n\n### Subsection\n', { expectH1: false });
+  assert.deepEqual(issues, []);
+});
+
+test('auditHeadings with expectH1:false flags an H1 in the body', () => {
+  const issues = auditHeadings('# Duplicate title\n\n## Section\n', { expectH1: false });
+  assert.ok(issues.some((issue) => issue.includes('body contains an H1')));
+});
+
+test('auditMeta with requireOgImage:false does not demand an OG image', () => {
+  const issues = auditMeta(
+    { title: 'Title', description: 'A concise description.', ogImage: undefined },
+    { requireOgImage: false },
+  );
+  assert.deepEqual(issues, []);
+});
+
 test('parseFrontmatter extracts simple YAML frontmatter fields', () => {
   const content =
     '---\ntitle: My Post\ndescription: A post about things.\n---\n# My Post\n\nBody text.\n';
@@ -66,11 +84,11 @@ test('the CLI script exits 0, flags a broken MDX fixture, and does not flag a we
   const goodFixturePath = path.join(blogDir, 'good-fixture.mdx');
   writeFileSync(
     brokenFixturePath,
-    `---\ntitle: Broken Post\ndescription: ${'x'.repeat(200)}\n---\n## Missing H1\n`,
+    `---\ntitle: Broken Post\ndescription: ${'x'.repeat(200)}\n---\n# Duplicate title in body\n`,
   );
   writeFileSync(
     goodFixturePath,
-    '---\ntitle: Good Post\ndescription: A concise, well-formed description under the limit.\nogImage: /og/good-post.png\n---\n# Good Post\n\n## Section\n',
+    '---\ntitle: Good Post\ndescription: A concise, well-formed description under the limit.\n---\n## Section\n\n### Subsection\n',
   );
 
   try {
