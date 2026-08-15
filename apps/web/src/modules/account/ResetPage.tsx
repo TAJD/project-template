@@ -1,23 +1,24 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router';
+import { useParams } from 'react-router';
 import { Card } from '../../components/Card';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
-import { AuthApiError, signIn } from './api';
+import { AuthApiError, resetPassword } from './api';
 
-export function SignInPage() {
-  const [email, setEmail] = useState('');
+export function ResetPage() {
+  const { token } = useParams<{ token: string }>();
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!token) return;
     setError(null);
     setSubmitting(true);
     try {
-      await signIn(email, password);
-      window.location.href = '/';
+      await resetPassword(token, password);
+      window.location.href = '/sign-in';
     } catch (err) {
       setError(
         err instanceof AuthApiError ? err.message : 'Something went wrong. Please try again.',
@@ -26,24 +27,26 @@ export function SignInPage() {
     }
   }
 
+  if (!token) {
+    return (
+      <Card className="mx-auto max-w-sm">
+        <p role="alert" className="text-error">
+          Invalid or expired reset link.
+        </p>
+      </Card>
+    );
+  }
+
   return (
     <Card className="mx-auto max-w-sm">
-      <h1 className="text-xl font-semibold">Sign in</h1>
+      <h1 className="text-xl font-semibold">Choose a new password</h1>
       <form className="mt-4 flex flex-col gap-4" onSubmit={handleSubmit}>
         <Input
-          label="Email"
-          type="email"
-          name="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <Input
-          label="Password"
+          label="New password"
           type="password"
           name="password"
-          autoComplete="current-password"
+          autoComplete="new-password"
+          minLength={8}
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -54,11 +57,8 @@ export function SignInPage() {
           </p>
         )}
         <Button type="submit" disabled={submitting}>
-          {submitting ? 'Signing in…' : 'Sign in'}
+          {submitting ? 'Saving…' : 'Save new password'}
         </Button>
-        <Link to="/reset-password" className="text-sm text-muted underline">
-          Forgotten your password?
-        </Link>
       </form>
     </Card>
   );

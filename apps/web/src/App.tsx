@@ -3,7 +3,13 @@ import type { SiteConfig } from '@template/shared';
 import { Layout } from './components/Layout';
 import { Card } from './components/Card';
 import { BlogListPage, BlogPostPage, DraftPostPage, TagPage } from './modules/blog';
-import { SignInPage, SignUpPage } from './modules/account';
+import {
+  SignInPage,
+  SignUpPage,
+  ResetRequestPage,
+  ResetPage,
+  DevMailboxPage,
+} from './modules/account';
 
 const siteConfig: SiteConfig = { name: 'Exemplar' };
 
@@ -27,6 +33,9 @@ export default function App() {
         <Route path="/tags/:tag" element={<TagPage />} />
         <Route path="/sign-up" element={<SignUpPage />} />
         <Route path="/sign-in" element={<SignInPage />} />
+        <Route path="/reset-password" element={<ResetRequestPage />} />
+        <Route path="/reset-password/:token" element={<ResetPage />} />
+        <Route path="/dev/mailbox" element={<DevMailboxPage />} />
       </Route>
     </Routes>
   );

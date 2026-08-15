@@ -1,34 +1,47 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router';
 import { Card } from '../../components/Card';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
-import { AuthApiError, signIn } from './api';
+import { AuthApiError, requestPasswordReset } from './api';
 
-export function SignInPage() {
+export function ResetRequestPage() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      await signIn(email, password);
-      window.location.href = '/';
+      await requestPasswordReset(email);
+      // Same confirmation regardless of whether the email is registered —
+      // matches the server's enumeration-safe response.
+      setSubmitted(true);
     } catch (err) {
       setError(
         err instanceof AuthApiError ? err.message : 'Something went wrong. Please try again.',
       );
+    } finally {
       setSubmitting(false);
     }
   }
 
+  if (submitted) {
+    return (
+      <Card className="mx-auto max-w-sm">
+        <h1 className="text-xl font-semibold">Check your email</h1>
+        <p className="mt-2 text-muted">
+          If an account exists for {email}, we&rsquo;ve sent a link to reset your password.
+        </p>
+      </Card>
+    );
+  }
+
   return (
     <Card className="mx-auto max-w-sm">
-      <h1 className="text-xl font-semibold">Sign in</h1>
+      <h1 className="text-xl font-semibold">Reset your password</h1>
       <form className="mt-4 flex flex-col gap-4" onSubmit={handleSubmit}>
         <Input
           label="Email"
@@ -39,26 +52,14 @@ export function SignInPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <Input
-          label="Password"
-          type="password"
-          name="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
         {error && (
           <p role="alert" className="text-sm text-error">
             {error}
           </p>
         )}
         <Button type="submit" disabled={submitting}>
-          {submitting ? 'Signing in…' : 'Sign in'}
+          {submitting ? 'Sending…' : 'Send reset link'}
         </Button>
-        <Link to="/reset-password" className="text-sm text-muted underline">
-          Forgotten your password?
-        </Link>
       </form>
     </Card>
   );

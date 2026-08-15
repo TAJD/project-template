@@ -1,6 +1,10 @@
 export interface AuthUser {
   id: string;
   email: string;
+  // Optional (rather than required) so existing signup/login/me mocks in
+  // tests that predate email verification don't need updating — a missing
+  // value is treated the same as `false` by VerifyPromptBanner.
+  emailVerified?: boolean;
 }
 
 interface AuthResponse {
@@ -59,4 +63,16 @@ export function signOut(): Promise<void> {
 
 export function fetchMe(): Promise<AuthResponse> {
   return request('/me');
+}
+
+export function requestEmailVerification(): Promise<{ ok: true }> {
+  return request('/verify/request', { method: 'POST' });
+}
+
+export function requestPasswordReset(email: string): Promise<{ ok: true }> {
+  return request('/reset/request', { method: 'POST', body: JSON.stringify({ email }) });
+}
+
+export function resetPassword(token: string, password: string): Promise<{ ok: true }> {
+  return request(`/reset/${token}`, { method: 'POST', body: JSON.stringify({ password }) });
 }
