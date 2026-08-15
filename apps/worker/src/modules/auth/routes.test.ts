@@ -108,6 +108,34 @@ describe('auth routes', () => {
     expect(setCookie).toMatch(/HttpOnly/i);
     expect(setCookie).toMatch(/SameSite=Lax/i);
     expect(setCookie).toMatch(/Path=\//i);
+    // localhost is exempt so `wrangler dev` over plain HTTP still works.
+    expect(setCookie).not.toMatch(/Secure/i);
+  });
+
+  it('sets Secure on the session cookie for a non-local host', async () => {
+    const res = await run(
+      new Request('https://example.com/api/auth/signup', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'CF-Connecting-IP': '10.0.0.90' },
+        body: JSON.stringify({ email: 'securecookie@example.com', password: 'goodpass1' }),
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    expect(res.headers.get('set-cookie') ?? '').toMatch(/Secure/i);
+  });
+
+  it('sets Secure even when a non-local host is reached over plain HTTP', async () => {
+    const res = await run(
+      new Request('http://example.com/api/auth/signup', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'CF-Connecting-IP': '10.0.0.91' },
+        body: JSON.stringify({ email: 'insecurescheme@example.com', password: 'goodpass1' }),
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    expect(res.headers.get('set-cookie') ?? '').toMatch(/Secure/i);
   });
 
   it('rate limits repeated signup attempts', async () => {

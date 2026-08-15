@@ -26,16 +26,23 @@ function parseCredentials(body: unknown): Credentials | null {
   return { email: email.trim().toLowerCase(), password };
 }
 
-// The Secure cookie flag is only honoured by browsers over HTTPS. Real
-// deployments (workers.dev / a custom domain) are always HTTPS, but local
-// `wrangler dev` serves plain HTTP by default — a hard-coded `secure: true`
-// would silently break the signup/login flow for every local run. Deriving
-// it from the request's own protocol keeps the flag on wherever it can
-// matter without breaking the "runnable locally" requirement.
+const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
+
+// The Secure cookie flag is only honoured by browsers over HTTPS, and local
+// `wrangler dev` serves plain HTTP — a hard-coded `secure: true` would
+// silently break the signup/login flow for every local run. Keying off the
+// hostname rather than the request protocol means Secure is set on every
+// non-local host unconditionally: a deployment reached over plain HTTP (a
+// zone without "Always Use HTTPS") would otherwise hand out a session cookie
+// the browser is then willing to replay in cleartext.
+export function isLocalRequest(url: string): boolean {
+  return LOCAL_HOSTNAMES.has(new URL(url).hostname);
+}
+
 function sessionCookieOptions(c: Context, expires: Date) {
   return {
     httpOnly: true,
-    secure: new URL(c.req.url).protocol === 'https:',
+    secure: !isLocalRequest(c.req.url),
     sameSite: 'Lax' as const,
     path: '/',
     expires,
