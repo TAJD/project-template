@@ -9,6 +9,7 @@ export const routes: RouteMeta[] = [
     path: '/',
     title: 'Exemplar',
     description: 'A production-ready starting point for new products.',
+    ogImage: '/og/home.png',
   }),
 ];
 
