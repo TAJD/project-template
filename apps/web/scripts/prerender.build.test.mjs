@@ -49,6 +49,22 @@ describe('web build pipeline', () => {
     }
   }, 120_000);
 
+  it('indexes every prerendered page with Pagefind, including post bodies', () => {
+    const entry = JSON.parse(
+      readFileSync(path.join(webDir, 'dist', 'pagefind', 'pagefind-entry.json'), 'utf-8'),
+    );
+    // Home + /blog + the two published posts. A regression to shell-only
+    // prerendering would drop this back to 1.
+    expect(entry.languages.en.page_count).toBe(4);
+
+    const postHtml = readFileSync(
+      path.join(webDir, 'dist', 'blog', 'getting-started-with-the-template', 'index.html'),
+      'utf-8',
+    );
+    expect(postHtml).toContain('data-pagefind-body');
+    expect(postHtml).toContain('Most projects start by copying an old repo');
+  }, 120_000);
+
   it('never prerenders a draft post', () => {
     expect(
       existsSync(path.join(webDir, 'dist', 'blog', 'a-draft-post-in-progress', 'index.html')),

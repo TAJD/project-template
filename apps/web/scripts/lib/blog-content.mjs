@@ -18,9 +18,10 @@ export function loadPublishedBlogEntries(contentDir) {
   return files
     .map((file) => {
       const raw = readFileSync(path.join(contentDir, file), 'utf-8');
-      const { data } = matter(raw);
+      const { data, content } = matter(raw);
       return {
         slug: file.replace(/\.mdx$/, ''),
+        content,
         frontmatter: {
           ...data,
           pubDate: toIsoDate(data.pubDate),

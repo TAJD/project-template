@@ -1,6 +1,8 @@
-import type { InputHTMLAttributes } from 'react';
+import type { ComponentProps } from 'react';
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+// ComponentProps<'input'> (rather than InputHTMLAttributes) so callers can pass
+// `ref` straight through — React 19 treats it as an ordinary prop.
+interface InputProps extends ComponentProps<'input'> {
   label: string;
 }
 

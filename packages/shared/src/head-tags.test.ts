@@ -73,6 +73,16 @@ describe('renderHeadTags', () => {
     expect(html).not.toContain('application/ld+json');
   });
 
+  it('renders RSS and Atom autodiscovery links built from the base URL', () => {
+    const html = renderHeadTags(meta, 'https://example.com');
+    expect(html).toContain(
+      '<link rel="alternate" type="application/rss+xml" title="RSS Feed" href="https://example.com/feed.xml" />',
+    );
+    expect(html).toContain(
+      '<link rel="alternate" type="application/atom+xml" title="Atom Feed" href="https://example.com/atom.xml" />',
+    );
+  });
+
   it('escapes HTML-sensitive characters in title and description', () => {
     const html = renderHeadTags({
       path: '/',
