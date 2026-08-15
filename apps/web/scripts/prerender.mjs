@@ -2,6 +2,8 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { renderHeadTags } from '@template/shared';
+// Node's built-in TS type-stripping (default-on from 22.18) resolves this
+// .ts import at runtime — see root package.json's engines.node.
 import { routes } from '../src/seo.config.ts';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
