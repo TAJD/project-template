@@ -55,3 +55,54 @@ export const devEmails = sqliteTable('dev_emails', {
 
 export type DevEmail = typeof devEmails.$inferSelect;
 export type NewDevEmail = typeof devEmails.$inferInsert;
+
+// One Stripe customer per user. Created at first checkout, before any
+// webhook can reference it, so subscription events (which carry a Stripe
+// customer id, not our userId) always have somewhere to resolve to.
+export const customers = sqliteTable('customers', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  stripeCustomerId: text('stripe_customer_id').notNull().unique(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+export type Customer = typeof customers.$inferSelect;
+export type NewCustomer = typeof customers.$inferInsert;
+
+// One row per user (not per Stripe subscription id) — this is the D1 mirror
+// `getSubscription(userId)` reads, kept current by webhook events and never
+// queried by calling Stripe at request time. `lastEventCreatedAt` is the
+// Stripe event envelope's own `created` timestamp (when Stripe generated the
+// event, not when we received it) — the state machine keys convergence off
+// this instead of arrival order, so an "updated" event that describes a
+// later point in time than an already-applied "created" event always wins,
+// even if it happens to be delivered first.
+export const subscriptions = sqliteTable('subscriptions', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  stripeSubscriptionId: text('stripe_subscription_id').notNull(),
+  status: text('status').notNull(),
+  priceId: text('price_id').notNull(),
+  currentPeriodEnd: integer('current_period_end', { mode: 'timestamp' }).notNull(),
+  lastEventCreatedAt: integer('last_event_created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+});
+
+export type Subscription = typeof subscriptions.$inferSelect;
+export type NewSubscription = typeof subscriptions.$inferInsert;
+
+// Dedup/idempotency guard: `eventId` is Stripe's own event id, unique so a
+// redelivered webhook (Stripe retries on anything but a 2xx) can be told
+// apart from a first delivery with a single INSERT ... the DB's own unique
+// constraint does the work, not a separate SELECT-then-INSERT that would
+// leave the same race window PT-11/12's token-consumption review flagged.
+export const stripeEvents = sqliteTable('stripe_events', {
+  eventId: text('event_id').primaryKey(),
+  type: text('type').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+});
+
+export type StripeEvent = typeof stripeEvents.$inferSelect;
+export type NewStripeEvent = typeof stripeEvents.$inferInsert;
