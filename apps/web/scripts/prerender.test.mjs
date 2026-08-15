@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { injectHeadTags } from './prerender.mjs';
+import path from 'node:path';
+import { injectHeadTags, outputPathForRoute } from './prerender.mjs';
 
 describe('injectHeadTags', () => {
   it('replaces the content between the seo:head markers', () => {
@@ -14,5 +15,21 @@ describe('injectHeadTags', () => {
 
   it('throws when the markers are missing', () => {
     expect(() => injectHeadTags('<head></head>', '<title>x</title>')).toThrow();
+  });
+});
+
+describe('outputPathForRoute', () => {
+  it('writes the home route to dist/index.html', () => {
+    expect(outputPathForRoute('dist', '/')).toBe(path.join('dist', 'index.html'));
+  });
+
+  it('writes a nested route to its own directory index.html', () => {
+    expect(outputPathForRoute('dist', '/blog/my-post')).toBe(
+      path.join('dist', 'blog', 'my-post', 'index.html'),
+    );
+  });
+
+  it('tolerates a trailing slash', () => {
+    expect(outputPathForRoute('dist', '/blog/')).toBe(path.join('dist', 'blog', 'index.html'));
   });
 });

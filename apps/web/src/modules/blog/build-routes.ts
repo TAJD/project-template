@@ -36,7 +36,10 @@ export function buildBlogRoutes(publishedEntries: PublishedEntry[]): RouteMeta[]
       title: post.frontmatter.title,
       description: post.frontmatter.description,
       jsonLd,
-      ...(post.frontmatter.heroImage ? { ogImage: post.frontmatter.heroImage } : {}),
+      // `heroImage` (an author-supplied asset under apps/web/public/) wins when
+      // set; otherwise fall back to the card that generate-og.mjs renders for
+      // this route, so every post always has a resolvable og:image.
+      ogImage: post.frontmatter.heroImage ?? `/og/blog-${post.slug}.png`,
     };
   });
 
@@ -45,6 +48,7 @@ export function buildBlogRoutes(publishedEntries: PublishedEntry[]): RouteMeta[]
       path: '/blog',
       title: 'Blog',
       description: 'Articles and updates from Exemplar.',
+      ogImage: '/og/blog.png',
     },
     ...postRoutes,
   ];
