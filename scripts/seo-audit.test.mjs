@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { auditMeta, auditHeadings, parseFrontmatter } from './seo-audit.mjs';
 
@@ -57,13 +57,19 @@ test('parseFrontmatter extracts simple YAML frontmatter fields', () => {
 });
 
 test('the CLI script exits 0, flags a broken MDX fixture, and does not flag a well-formed one', () => {
+  // content/blog may already hold real posts (the blog module, PT-9) — only
+  // touch the two fixture files this test owns, never the directory itself,
+  // so real content survives a test run.
+  const blogDirPreexisted = existsSync(blogDir);
   mkdirSync(blogDir, { recursive: true });
+  const brokenFixturePath = path.join(blogDir, 'broken-fixture.mdx');
+  const goodFixturePath = path.join(blogDir, 'good-fixture.mdx');
   writeFileSync(
-    path.join(blogDir, 'broken-fixture.mdx'),
+    brokenFixturePath,
     `---\ntitle: Broken Post\ndescription: ${'x'.repeat(200)}\n---\n## Missing H1\n`,
   );
   writeFileSync(
-    path.join(blogDir, 'good-fixture.mdx'),
+    goodFixturePath,
     '---\ntitle: Good Post\ndescription: A concise, well-formed description under the limit.\nogImage: /og/good-post.png\n---\n# Good Post\n\n## Section\n',
   );
 
@@ -81,6 +87,8 @@ test('the CLI script exits 0, flags a broken MDX fixture, and does not flag a we
         output.includes('OK: content/blog/good-fixture.mdx'),
     );
   } finally {
-    rmSync(blogDir, { recursive: true, force: true });
+    unlinkSync(brokenFixturePath);
+    unlinkSync(goodFixturePath);
+    if (!blogDirPreexisted) rmdirSync(blogDir);
   }
 });
