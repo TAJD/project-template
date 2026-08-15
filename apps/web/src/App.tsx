@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router';
 import type { SiteConfig } from '@template/shared';
 import { Layout } from './components/Layout';
 import { Card } from './components/Card';
+import { BlogListPage, BlogPostPage, DraftPostPage, TagPage } from './modules/blog';
 
 const siteConfig: SiteConfig = { name: 'Exemplar' };
 
@@ -19,6 +20,10 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
+        <Route path="/blog" element={<BlogListPage />} />
+        <Route path="/blog/:slug" element={<BlogPostPage />} />
+        <Route path="/draft/:slug" element={<DraftPostPage />} />
+        <Route path="/tags/:tag" element={<TagPage />} />
       </Route>
     </Routes>
   );
