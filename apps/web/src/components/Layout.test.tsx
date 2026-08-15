@@ -40,6 +40,19 @@ describe('Layout', () => {
     expect(localStorage.getItem('theme')).toBe('dark');
   });
 
+  it('falls back to the OS colour-scheme preference when nothing is persisted', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({ matches: query === '(prefers-color-scheme: dark)' })),
+    );
+
+    renderLayout();
+
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+
+    vi.unstubAllGlobals();
+  });
+
   it('reads a previously persisted theme from localStorage on mount', () => {
     localStorage.setItem('theme', 'dark');
 

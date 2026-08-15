@@ -13,7 +13,8 @@ function applyTheme(theme: Theme) {
 export function Layout() {
   const [theme, setTheme] = useState<Theme>(() => {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    return stored === 'dark' || stored === 'light' ? stored : 'light';
+    if (stored === 'dark' || stored === 'light') return stored;
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
   useEffect(() => {
