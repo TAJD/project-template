@@ -1,7 +1,11 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
-import { routes } from '../src/seo.config.ts';
+import { routes as staticRoutes } from '../src/seo.config.ts';
+// See generate-sitemap.mjs for why this script reads blog frontmatter off
+// disk instead of importing the blog module directly.
+import { loadPublishedBlogEntries } from './lib/blog-content.mjs';
+import { buildBlogRoutes } from '../src/modules/blog/build-routes.ts';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const workerRoutesPath = path.resolve(
@@ -12,6 +16,7 @@ const workerRoutesPath = path.resolve(
   'src',
   'spa-routes.generated.ts',
 );
+const blogContentDir = path.resolve(scriptDir, '..', '..', '..', 'content', 'blog');
 
 export function buildSpaRoutesFile(paths) {
   const entries = paths.map((routePath) => `  '${routePath}',`).join('\n');
@@ -22,6 +27,8 @@ export function buildSpaRoutesFile(paths) {
 }
 
 function main() {
+  const blogRoutes = buildBlogRoutes(loadPublishedBlogEntries(blogContentDir));
+  const routes = [...staticRoutes, ...blogRoutes];
   const content = buildSpaRoutesFile(routes.map((route) => route.path));
   writeFileSync(workerRoutesPath, content, 'utf-8');
   console.log(`Wrote ${routes.length} route(s) to apps/worker/src/spa-routes.generated.ts`);
