@@ -22,9 +22,9 @@ export function initialTheme(): Theme {
 function UserMenu() {
   const { state } = useUser();
 
-  if (state.status === 'loading' || state.status === 'error') return null;
+  if (state.status === 'loading') return null;
 
-  if (state.status === 'unauthenticated') {
+  if (state.status === 'unauthenticated' || state.status === 'error') {
     return (
       <div className="flex items-center gap-2 text-sm">
         <Link to="/sign-in">Sign in</Link>

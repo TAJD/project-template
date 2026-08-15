@@ -81,6 +81,15 @@ describe('Layout', () => {
     expect(screen.getByRole('link', { name: 'Sign up' })).toBeTruthy();
   });
 
+  it('shows sign-in/sign-up links when the auth check itself fails, rather than hiding them', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+
+    renderLayout();
+
+    expect(await screen.findByRole('link', { name: 'Sign in' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Sign up' })).toBeTruthy();
+  });
+
   it('shows the user email and a sign-out control when authenticated', async () => {
     vi.stubGlobal(
       'fetch',
