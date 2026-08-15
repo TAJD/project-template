@@ -3,7 +3,7 @@ import { env, createExecutionContext, waitOnExecutionContext } from 'cloudflare:
 import worker from '../../index';
 import { createDb } from '../../db';
 import { customers } from '../../db/schema';
-import { getSubscription } from './subscription';
+import { applySubscriptionEvent, getSubscription } from './subscription';
 
 const billingEnv = {
   ...env,
@@ -94,13 +94,68 @@ function subscriptionEvent(opts: {
   };
 }
 
+describe('GET /api/billing/subscription', () => {
+  it('rejects an unauthenticated request', async () => {
+    const res = await run(new Request('http://localhost/api/billing/subscription'));
+    expect(res.status).toBe(401);
+  });
+
+  it('returns null for a user with no subscription', async () => {
+    const { cookie } = await signIn('no-sub@example.com');
+
+    const res = await run(
+      new Request('http://localhost/api/billing/subscription', { headers: { cookie } }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ subscription: null });
+  });
+
+  it('reads the mirrored subscription without ever calling Stripe', async () => {
+    const fetchMock = vi.fn(() => {
+      throw new Error('GET /subscription must not call Stripe');
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const db = createDb(env.DB);
+    const { cookie, userId } = await signIn('has-sub@example.com');
+    await db.insert(customers).values({
+      userId,
+      stripeCustomerId: 'cus_has_sub',
+      createdAt: new Date(),
+    });
+    await applySubscriptionEvent(
+      db,
+      userId,
+      {
+        stripeSubscriptionId: 'sub_has_sub',
+        status: 'active',
+        priceId: 'price_test_123',
+        currentPeriodEnd: new Date('2030-01-01T00:00:00Z'),
+      },
+      new Date('2026-01-01T00:00:00Z'),
+    );
+
+    const res = await run(
+      new Request('http://localhost/api/billing/subscription', { headers: { cookie } }),
+    );
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { subscription: { status: string } | null };
+    expect(body.subscription?.status).toBe('active');
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    vi.unstubAllGlobals();
+  });
+});
+
 describe('POST /api/billing/checkout', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
   it('creates a Stripe customer and checkout session, returning its URL', async () => {
-    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, _init?: RequestInit) => {
       const url = String(input);
       if (url.includes('/customers')) {
         return Promise.resolve(Response.json({ id: 'cus_new_1' }));
@@ -160,7 +215,7 @@ describe('POST /api/billing/portal', () => {
   });
 
   it('creates a portal session for an existing customer', async () => {
-    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+    const fetchMock = vi.fn((input: RequestInfo | URL, _init?: RequestInit) => {
       const url = String(input);
       if (url.includes('/customers')) return Promise.resolve(Response.json({ id: 'cus_portal_1' }));
       if (url.includes('/checkout/sessions')) {

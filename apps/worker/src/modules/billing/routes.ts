@@ -8,7 +8,7 @@ import { getOrCreateCustomer, findCustomer } from './customers';
 import { createCheckoutSession, createPortalSession, StripeApiError } from './stripe-client';
 import { verifyStripeSignature } from './webhook-signature';
 import { claimEvent, parseStripeEvent, parseSubscriptionObject } from './events';
-import { applySubscriptionEvent } from './subscription';
+import { applySubscriptionEvent, getSubscription } from './subscription';
 
 export const billing = new Hono<{ Bindings: Env; Variables: AuthVariables }>();
 
@@ -17,6 +17,24 @@ const SUBSCRIPTION_EVENT_TYPES = new Set([
   'customer.subscription.updated',
   'customer.subscription.deleted',
 ]);
+
+// Reads the D1 mirror only — never calls Stripe. This is the one query
+// surface `useSubscription()` (apps/web/src/modules/billing/useSubscription.ts)
+// and any future gated route (PT-15) are meant to use.
+billing.get('/subscription', requireUser, async (c) => {
+  const db = createDb(c.env.DB);
+  const subscription = await getSubscription(db, c.get('user').id);
+
+  if (!subscription) return c.json({ subscription: null });
+
+  return c.json({
+    subscription: {
+      status: subscription.status,
+      priceId: subscription.priceId,
+      currentPeriodEnd: subscription.currentPeriodEnd.toISOString(),
+    },
+  });
+});
 
 billing.post('/checkout', requireUser, async (c) => {
   const secretKey = c.env.STRIPE_SECRET_KEY;
