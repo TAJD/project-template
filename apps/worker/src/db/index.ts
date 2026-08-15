@@ -7,7 +7,15 @@ export function createDb(d1: D1Database) {
   return drizzle(d1, { schema });
 }
 
-export { users, sessions, authTokens, devEmails } from './schema';
+export {
+  users,
+  sessions,
+  authTokens,
+  devEmails,
+  customers,
+  subscriptions,
+  stripeEvents,
+} from './schema';
 export type {
   User,
   NewUser,
@@ -17,4 +25,10 @@ export type {
   NewAuthToken,
   DevEmail,
   NewDevEmail,
+  Customer,
+  NewCustomer,
+  Subscription,
+  NewSubscription,
+  StripeEvent,
+  NewStripeEvent,
 } from './schema';

@@ -19,4 +19,13 @@ export interface Env extends RateLimitBindings {
   // `/api/test-auth/prod-login` route 404s until a deployment deliberately
   // opts in.
   TEST_LOGIN_SECRET?: string;
+  // Billing module (see modules/billing/, docs/modules/billing.md). Both are
+  // Worker secrets (`wrangler secret put STRIPE_SECRET_KEY` /
+  // `STRIPE_WEBHOOK_SECRET`), never wrangler.toml vars — unset in every
+  // local/CI environment, which is what tests override per-request instead.
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
+  // The single subscription price this example site offers. A plain var
+  // (not a secret) — it identifies a product, not a credential.
+  STRIPE_PRICE_ID?: string;
 }
