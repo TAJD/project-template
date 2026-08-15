@@ -39,3 +39,23 @@ DraftPostPage, TagPage } from './modules/blog'` line and the four `<Route>` entr
    Run `pnpm install` afterwards.
 7. Run `pnpm check` to confirm the sitemap/registry tests and the rest of the suite
    are still green with the module gone.
+
+## Feeds and search
+
+PT-10 added RSS/Atom feed generation (`apps/web/scripts/generate-feeds.mjs`) and a
+Pagefind-powered search UI (`apps/web/src/components/Search.tsx`) as part of the
+blog module's build/runtime story, but neither is blog-specific:
+
+- `generate-feeds.mjs` reads `content/blog/*.mdx` via `scripts/lib/blog-content.mjs`
+  and only produces entries from that directory. If the blog module is removed per
+  the steps above, `feed.xml`/`atom.xml` would be empty-but-valid feeds — remove
+  `generate-feeds.mjs` from `apps/web/package.json`'s `build` script and the
+  autodiscovery `<link rel="alternate" ...>` tags in
+  `packages/shared/src/head-tags.ts` too, unless another content source is later
+  wired into feed generation.
+- Pagefind indexes whatever HTML ends up in `apps/web/dist` at build time, not just
+  blog content. If the project still has other prerendered/indexed pages (e.g. the
+  home page) after blog is removed, keep `pagefind --site dist` in the build script
+  and keep `Search` mounted in `Layout.tsx` — search isn't hard-required on the blog
+  module. Only drop the Pagefind build step and `Search` component if the project
+  ends up with no indexable content at all.
