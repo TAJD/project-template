@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@template/shared':
+        specifier: workspace:*
+        version: link:packages/shared
     devDependencies:
       '@eslint/js':
         specifier: ^9.14.0

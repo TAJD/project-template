@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Replace with the site's real deployed origin at stamp-time.
+Sitemap: https://example.com/sitemap.xml
