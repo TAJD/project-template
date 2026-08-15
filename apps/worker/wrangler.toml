@@ -18,6 +18,12 @@ compatibility_date = "2025-01-01"
 directory = "../web/dist"
 binding = "ASSETS"
 run_worker_first = ["/api/*"]
+# Client-routed SPA paths (e.g. /tags/:tag, /draft/:slug) have no matching
+# asset. Without this, they fall through to the Worker, which only serves
+# /api/* and would 404 them. Routes the SEO registry knows about are
+# prerendered to their own dist/<path>/index.html and still win over this
+# fallback, so they keep their per-route <head>.
+not_found_handling = "single-page-application"
 
 [build]
 command = "node scripts/ensure-web-dist.mjs"
