@@ -1,3 +1,13 @@
+# Deploy flow:
+#   - Automatic: Cloudflare Workers Builds triggers a deploy on every push to
+#     `main`, once a Workers Builds connection to this GitHub repo is
+#     configured in the Cloudflare dashboard (not set up by this template —
+#     requires a Cloudflare account and dashboard access).
+#   - Manual: run `pnpm deploy` from the repo root. This builds the full
+#     workspace (so apps/web/dist exists for the [assets] binding below) and
+#     then runs `wrangler deploy` from this package. Requires a Cloudflare
+#     API token / `wrangler login` to be configured locally.
+
 name = "worker"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
