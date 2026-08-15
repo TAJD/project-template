@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { badRequest, notFound, serverError, unauthorized } from './errors';
+import { badRequest, notFound, serverError, tooManyRequests, unauthorized } from './errors';
 
 describe('error contract', () => {
   it('badRequest returns a 400 error result', async () => {
@@ -18,6 +18,12 @@ describe('error contract', () => {
     const { error } = notFound();
     expect(error.status).toBe(404);
     expect(await error.json()).toEqual({ error: 'Not found' });
+  });
+
+  it('tooManyRequests returns a 429 error result', async () => {
+    const { error } = tooManyRequests();
+    expect(error.status).toBe(429);
+    expect(await error.json()).toEqual({ error: 'Too many requests' });
   });
 
   it('serverError does not leak the underlying error message', async () => {

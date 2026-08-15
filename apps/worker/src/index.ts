@@ -1,13 +1,12 @@
 import { Hono } from 'hono';
-import type { RateLimitBindings } from './lib/rate-limit';
+import type { Env } from './env';
+import { auth } from './modules/auth';
 
-export interface Env extends RateLimitBindings {
-  ASSETS: Fetcher;
-  LOG_LEVEL?: string;
-}
+export type { Env } from './env';
 
 const app = new Hono<{ Bindings: Env }>();
 
 app.get('/api/health', (c) => c.json({ ok: true }));
+app.route('/api/auth', auth);
 
 export default app;

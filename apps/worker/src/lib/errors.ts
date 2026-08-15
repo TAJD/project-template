@@ -26,6 +26,10 @@ export function notFound(): ErrorResult {
   return jsonError('Not found', 404);
 }
 
+export function tooManyRequests(): ErrorResult {
+  return jsonError('Too many requests', 429);
+}
+
 export function serverError(err: unknown, logLevel?: string): ErrorResult {
   createLogger(logLevel).error('unhandled error', {
     error: err instanceof Error ? err.message : String(err),

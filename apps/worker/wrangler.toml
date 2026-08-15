@@ -25,5 +25,28 @@ run_worker_first = ["/api/*"]
 # fallback, so they keep their per-route <head>.
 not_found_handling = "single-page-application"
 
+[[d1_databases]]
+binding = "DB"
+database_name = "template-db"
+# Placeholder — stamped projects run `wrangler d1 create template-db` and
+# paste the real ID here (and in the Cloudflare dashboard binding for
+# deployed environments). Local `wrangler dev` and the test harness both
+# use a local/in-memory SQLite file regardless of this value.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+# Native Workers Rate Limiting binding (poker-puzzle pattern, PT-3). Auth
+# routes key on client IP; see apps/worker/src/lib/rate-limit.ts.
+[[unsafe.bindings]]
+name = "AUTH_RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 10, period = 60 }
+
 [build]
-command = "node scripts/ensure-web-dist.mjs"
+# `apply-d1-migrations-on-build.mjs` only runs `wrangler d1 migrations
+# apply` when the build is a Cloudflare Workers Builds run on `main` (see
+# that script for the exact env var it checks) — local `pnpm build` and PR
+# builds skip it, so every dev still runs `wrangler d1 migrations apply DB
+# --local` themselves once, same as any other local D1 setup.
+command = "node scripts/ensure-web-dist.mjs && node scripts/apply-d1-migrations-on-build.mjs"
