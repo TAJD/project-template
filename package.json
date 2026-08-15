@@ -11,8 +11,10 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "typecheck": "pnpm -r run typecheck",
-    "test": "pnpm -r run test",
+    "test": "pnpm -r run test && node --test scripts/**/*.test.mjs",
     "build": "pnpm -r run build",
+    "seo": "node scripts/seo-audit.mjs",
+    "seo:live": "node scripts/seo-audit-live.mjs",
     "deploy": "pnpm run build && pnpm --filter @template/worker exec wrangler deploy",
     "prepare": "husky",
     "postinstall": "pnpm --filter @template/shared run build"
