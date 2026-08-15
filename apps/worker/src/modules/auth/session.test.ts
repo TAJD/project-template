@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { env } from 'cloudflare:test';
 import { createDb } from '../../db';
 import { users } from '../../db/schema';
-import { createSession, deleteSession, verifySession } from './session';
+import { createSession, deleteOtherSessionsForUser, deleteSession, verifySession } from './session';
 
 async function seedUser(id: string, email: string) {
   const db = createDb(env.DB);
@@ -60,5 +60,27 @@ describe('sessions', () => {
     const user = await verifySession(db, token);
 
     expect(user).toBeNull();
+  });
+
+  it('deleteOtherSessionsForUser leaves the current session alone', async () => {
+    const db = await seedUser('user-5', 'session5@example.com');
+    const { token: current } = await createSession(db, 'user-5');
+    const { token: other } = await createSession(db, 'user-5');
+
+    await deleteOtherSessionsForUser(db, 'user-5', current);
+
+    expect(await verifySession(db, current)).not.toBeNull();
+    expect(await verifySession(db, other)).toBeNull();
+  });
+
+  it('deleteOtherSessionsForUser falls back to deleting everything without a current token', async () => {
+    const db = await seedUser('user-6', 'session6@example.com');
+    const { token: a } = await createSession(db, 'user-6');
+    const { token: b } = await createSession(db, 'user-6');
+
+    await deleteOtherSessionsForUser(db, 'user-6', undefined);
+
+    expect(await verifySession(db, a)).toBeNull();
+    expect(await verifySession(db, b)).toBeNull();
   });
 });

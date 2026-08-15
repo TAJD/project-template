@@ -14,8 +14,8 @@ import { SESSION_COOKIE, deleteSession, deleteSessionsForUser, rotateSession } f
 import { requireUser, type AuthVariables } from './middleware';
 import { createAuthToken, consumeAuthToken } from './tokens';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MIN_PASSWORD_LENGTH = 8;
+export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const MIN_PASSWORD_LENGTH = 8;
 
 export const auth = new Hono<{ Bindings: Env; Variables: AuthVariables }>();
 
@@ -48,11 +48,11 @@ function sessionCookieOptions(c: Context, expires: Date) {
   };
 }
 
-function serializeUser(user: User) {
+export function serializeUser(user: User) {
   return { id: user.id, email: user.email, emailVerified: Boolean(user.emailVerifiedAt) };
 }
 
-async function checkRateLimit(
+export async function checkRateLimit(
   c: Context<{ Bindings: Env; Variables: AuthVariables }>,
   bucket: string,
 ) {

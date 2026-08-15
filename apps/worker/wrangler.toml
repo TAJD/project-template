@@ -35,6 +35,14 @@ database_name = "template-db"
 database_id = "00000000-0000-0000-0000-000000000000"
 migrations_dir = "migrations"
 
+[vars]
+# Tier-1 test-auth gate (PT-13). Safe to keep as a plain, checked-in var —
+# `/api/test-auth/login` also requires `isLocalRequest()` to be true, so
+# this value being public does nothing for a real deployment. Override it
+# per-CI-run via `wrangler dev --var TEST_AUTH_TOKEN:...` if you want a
+# non-default value.
+TEST_AUTH_TOKEN = "local-test-auth-token"
+
 # Native Workers Rate Limiting binding (poker-puzzle pattern, PT-3). Auth
 # routes key on client IP; see apps/worker/src/lib/rate-limit.ts.
 [[unsafe.bindings]]
