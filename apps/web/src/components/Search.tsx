@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from './Button';
 import { Input } from './Input';
 import { loadPagefind } from './pagefindClient';
@@ -48,6 +48,15 @@ export function Search() {
     setStatus('idle');
   }
 
+  useEffect(() => {
+    if (!open) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') close();
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open]);
+
   return (
     <>
       <button
@@ -60,11 +69,15 @@ export function Search() {
       </button>
 
       {open && (
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- backdrop click-to-close; Escape (handled above) covers keyboard users
         <div
           role="dialog"
           aria-modal="true"
           aria-label="Site search"
           className="fixed inset-0 z-50 flex items-start justify-center bg-ink/50 p-4 pt-20"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) close();
+          }}
         >
           <div className="w-full max-w-lg rounded-lg border border-rule bg-paper p-4 text-ink shadow-lg">
             <div className="flex items-end gap-2">
