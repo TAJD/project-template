@@ -18,6 +18,18 @@ describe('Layout', () => {
   beforeEach(() => {
     localStorage.clear();
     document.documentElement.removeAttribute('data-theme');
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 }),
+        ),
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('renders header, nav, footer, and the routed outlet content', () => {
@@ -60,6 +72,38 @@ describe('Layout', () => {
 
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     expect(screen.getByRole('button', { name: /light mode/i })).toBeTruthy();
+  });
+
+  it('shows sign-in/sign-up links when unauthenticated', async () => {
+    renderLayout();
+
+    expect(await screen.findByRole('link', { name: 'Sign in' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Sign up' })).toBeTruthy();
+  });
+
+  it('shows sign-in/sign-up links when the auth check itself fails, rather than hiding them', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+
+    renderLayout();
+
+    expect(await screen.findByRole('link', { name: 'Sign in' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Sign up' })).toBeTruthy();
+  });
+
+  it('shows the user email and a sign-out control when authenticated', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify({ user: { id: '1', email: 'a@b.com' } }), { status: 200 }),
+        ),
+    );
+
+    renderLayout();
+
+    expect(await screen.findByText('a@b.com')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy();
   });
 
   it('does not throw and defaults to light when window is unavailable (SSR/prerender)', () => {
