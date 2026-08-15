@@ -1,27 +1,10 @@
 import { eq } from 'drizzle-orm';
 import type { Database } from '../../db';
 import { sessions, users, type User } from '../../db/schema';
+import { hashToken, randomToken } from '../../lib/crypto';
 
 export const SESSION_COOKIE = 'session';
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-
-function generateToken(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-}
-
-// Sessions follow the same principle as passwords: the DB never holds a
-// value an attacker with read access could replay as-is. The cookie carries
-// the raw opaque token; only its SHA-256 hash is stored as the session id.
-async function hashToken(token: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
 
 export interface CreatedSession {
   token: string;
@@ -33,7 +16,7 @@ export async function createSession(
   userId: string,
   expiresAt: Date = new Date(Date.now() + SESSION_TTL_MS),
 ): Promise<CreatedSession> {
-  const token = generateToken();
+  const token = randomToken();
   const id = await hashToken(token);
 
   await db.insert(sessions).values({
@@ -78,4 +61,11 @@ export async function rotateSession(
 ): Promise<CreatedSession> {
   if (oldToken) await deleteSession(db, oldToken);
   return createSession(db, userId);
+}
+
+// A password reset proves control of the account independent of any
+// existing session cookie, so every other session — including ones a thief
+// of the old password kept alive — is invalidated at the same time.
+export async function deleteSessionsForUser(db: Database, userId: string): Promise<void> {
+  await db.delete(sessions).where(eq(sessions.userId, userId));
 }

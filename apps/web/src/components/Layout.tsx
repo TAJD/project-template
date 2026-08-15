@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, Link } from 'react-router';
 import { BottomTabBar } from './BottomTabBar';
 import { Search } from './Search';
-import { useUser, signOut } from '../modules/account';
+import { useUser, signOut, VerifyPromptBanner } from '../modules/account';
 
 type Theme = 'light' | 'dark';
 
@@ -82,6 +82,8 @@ export function Layout() {
           </button>
         </div>
       </header>
+
+      <VerifyPromptBanner />
 
       <main className="flex-1 px-4 py-6 pb-20 md:pb-6">
         <Outlet />
