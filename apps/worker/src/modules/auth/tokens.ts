@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, gt, isNull } from 'drizzle-orm';
 import type { Database } from '../../db';
 import { authTokens, users, type User } from '../../db/schema';
 import { hashToken, randomToken } from '../../lib/crypto';
@@ -35,32 +35,35 @@ export async function createAuthToken(
   return { token, expiresAt };
 }
 
-// Single-use: the row is marked used in the same call that validates it, so
-// a second consume of the same raw token — even one racing in immediately
-// after — reads usedAt already set and fails.
+// Single-use, atomically. Validity (unused, unexpired, right purpose) is
+// expressed as the WHERE clause of the UPDATE that marks the token used, so
+// SQLite decides it and the write together in one statement. A read-then-write
+// version would let two requests carrying the same raw token both observe
+// `used_at IS NULL` before either wrote it, and both consume a reset token.
 export async function consumeAuthToken(
   db: Database,
   token: string,
   purpose: TokenPurpose,
 ): Promise<User | null> {
   const tokenHash = await hashToken(token);
+  const now = new Date();
 
-  const rows = await db
-    .select({ token: authTokens, user: users })
-    .from(authTokens)
-    .innerJoin(users, eq(authTokens.userId, users.id))
-    .where(and(eq(authTokens.tokenHash, tokenHash), eq(authTokens.purpose, purpose)))
-    .limit(1);
-
-  const row = rows[0];
-  if (!row) return null;
-  if (row.token.usedAt) return null;
-  if (row.token.expiresAt.getTime() <= Date.now()) return null;
-
-  await db
+  const claimed = await db
     .update(authTokens)
-    .set({ usedAt: new Date() })
-    .where(eq(authTokens.tokenHash, tokenHash));
+    .set({ usedAt: now })
+    .where(
+      and(
+        eq(authTokens.tokenHash, tokenHash),
+        eq(authTokens.purpose, purpose),
+        isNull(authTokens.usedAt),
+        gt(authTokens.expiresAt, now),
+      ),
+    )
+    .returning({ userId: authTokens.userId });
 
-  return row.user;
+  const row = claimed[0];
+  if (!row) return null;
+
+  const found = await db.select().from(users).where(eq(users.id, row.userId)).limit(1);
+  return found[0] ?? null;
 }

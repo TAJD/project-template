@@ -7,6 +7,8 @@ import { createDb } from '../../db';
 import { users, type User } from '../../db/schema';
 import { badRequest, serverError, tooManyRequests, unauthorized } from '../../lib/errors';
 import { createEmailSender } from '../../lib/email';
+import { isLocalRequest } from '../../lib/request';
+import { createLogger } from '../../lib/logger';
 import { hashPassword, verifyPassword } from './password';
 import { SESSION_COOKIE, deleteSession, deleteSessionsForUser, rotateSession } from './session';
 import { requireUser, type AuthVariables } from './middleware';
@@ -29,8 +31,6 @@ function parseCredentials(body: unknown): Credentials | null {
   return { email: email.trim().toLowerCase(), password };
 }
 
-const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
-
 // The Secure cookie flag is only honoured by browsers over HTTPS, and local
 // `wrangler dev` serves plain HTTP — a hard-coded `secure: true` would
 // silently break the signup/login flow for every local run. Keying off the
@@ -38,10 +38,6 @@ const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
 // non-local host unconditionally: a deployment reached over plain HTTP (a
 // zone without "Always Use HTTPS") would otherwise hand out a session cookie
 // the browser is then willing to replay in cleartext.
-export function isLocalRequest(url: string): boolean {
-  return LOCAL_HOSTNAMES.has(new URL(url).hostname);
-}
-
 function sessionCookieOptions(c: Context, expires: Date) {
   return {
     httpOnly: true,
@@ -161,6 +157,10 @@ auth.get('/me', requireUser, (c) => {
 });
 
 auth.post('/verify/request', requireUser, async (c) => {
+  // Authenticated, but still rate limited: without this one signed-in account
+  // can drive unbounded sends through the mail provider.
+  if (!(await checkRateLimit(c, 'verify'))) return tooManyRequests().error;
+
   const user = c.get('user');
   if (user.emailVerifiedAt) return c.json({ ok: true });
 
@@ -211,29 +211,39 @@ auth.post('/reset/request', async (c) => {
 
   const normalizedEmail = email.trim().toLowerCase();
   const db = createDb(c.env.DB);
+  const requestUrl = c.req.url;
 
-  try {
-    const user = await db.query.users.findFirst({
-      where: (u, { eq: eqOp }) => eqOp(u.email, normalizedEmail),
-    });
+  // Everything account-dependent — the lookup, the token, the send — happens
+  // after the response is committed. Doing it inline would leak the answer
+  // three ways even though the body is identical: the known-email branch
+  // waits on a token write plus a Resend round trip (hundreds of ms) while
+  // the unknown-email branch returns immediately, and a failure in either of
+  // those turns the 200 into a 500 that the unknown-email branch can never
+  // produce. Deferring makes both branches emit the same response at the
+  // same moment whatever happens afterwards.
+  c.executionCtx.waitUntil(
+    (async () => {
+      const user = await db.query.users.findFirst({
+        where: (u, { eq: eqOp }) => eqOp(u.email, normalizedEmail),
+      });
+      if (!user) return;
 
-    if (user) {
       const { token } = await createAuthToken(db, user.id, 'reset');
-      const resetUrl = new URL(`/reset-password/${token}`, c.req.url).toString();
+      const resetUrl = new URL(`/reset-password/${token}`, requestUrl).toString();
       await createEmailSender(c.env, db).send({
         to: user.email,
         subject: 'Reset your password',
         text: `Reset your password: ${resetUrl}`,
         html: `<p>Reset your password: <a href="${resetUrl}">${resetUrl}</a></p>`,
       });
-    }
+    })().catch((err: unknown) => {
+      createLogger(c.env.LOG_LEVEL).error('reset request failed', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }),
+  );
 
-    // Same response whether or not the account exists, so this endpoint
-    // can't be used to enumerate registered emails.
-    return c.json({ ok: true });
-  } catch (err) {
-    return serverError(err, c.env.LOG_LEVEL).error;
-  }
+  return c.json({ ok: true });
 });
 
 auth.post('/reset/:token', async (c) => {

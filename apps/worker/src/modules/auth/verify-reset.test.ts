@@ -173,6 +173,35 @@ describe('password reset', () => {
     expect(second.status).toBe(400);
   });
 
+  it('a reset token survives only one of two concurrent consumes', async () => {
+    await signUp('resetrace@example.com');
+    await run(jsonRequest('/api/auth/reset/request', { email: 'resetrace@example.com' }));
+    const email = await latestDevEmail();
+    const token = extractToken(email.text, '/reset-password');
+
+    const [first, second] = await Promise.all([
+      run(jsonRequest(`/api/auth/reset/${token}`, { password: 'racepassone1' })),
+      run(jsonRequest(`/api/auth/reset/${token}`, { password: 'racepasstwo1' })),
+    ]);
+
+    const statuses = [first.status, second.status].sort((a, b) => a - b);
+    expect(statuses).toEqual([200, 400]);
+  });
+
+  it('rejects an expired reset token', async () => {
+    await signUp('resetexpired@example.com');
+    await run(jsonRequest('/api/auth/reset/request', { email: 'resetexpired@example.com' }));
+    const email = await latestDevEmail();
+    const token = extractToken(email.text, '/reset-password');
+
+    await env.DB.prepare('UPDATE auth_tokens SET expires_at = ? WHERE used_at IS NULL')
+      .bind(Math.floor(Date.now() / 1000) - 60)
+      .run();
+
+    const res = await run(jsonRequest(`/api/auth/reset/${token}`, { password: 'toolatepass1' }));
+    expect(res.status).toBe(400);
+  });
+
   it('does not enumerate accounts: same response for known and unknown emails', async () => {
     await signUp('known@example.com');
 
@@ -209,5 +238,10 @@ describe('/api/dev/mailbox', () => {
     await waitOnExecutionContext(ctx);
 
     expect(response.status).toBe(404);
+  });
+
+  it('404s on a non-local host even with RESEND_API_KEY unset', async () => {
+    const res = await run(new Request('https://example.com/api/dev/mailbox'));
+    expect(res.status).toBe(404);
   });
 });

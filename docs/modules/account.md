@@ -25,6 +25,8 @@ without touching unrelated code.
   spec's `apps/worker/src/db/` option.
 - **`apps/worker/src/lib/crypto.ts`** — `randomToken()`/`hashToken()`, shared by session
   tokens (`modules/auth/session.ts`) and single-use auth tokens (`modules/auth/tokens.ts`).
+- **`apps/worker/src/lib/request.ts`** — `isLocalRequest()`, the hostname check behind both
+  the session cookie's `Secure` flag and the `/api/dev/mailbox` prod gate.
 - **`apps/worker/src/lib/email.ts`** — `EmailSender` interface, `ResendSender`,
   `DevMailboxSender`, and the `createEmailSender()` factory (picks by `RESEND_API_KEY`
   presence). Lives in `lib/` rather than `modules/auth/` since billing may reuse it for
@@ -117,6 +119,11 @@ devMailbox)` calls.
   config. `RESEND_API_KEY` is unset in every local/CI environment by construction (it's a
   secret, never a wrangler.toml var), so `DevMailboxSender` and `/api/dev/mailbox` are live by
   default and only go away once a real deployment sets the secret.
+- **`/api/dev/mailbox` gates on hostname as well as `RESEND_API_KEY`** — the secret alone is
+  not a safe prod signal, because a deployment that never set it would fall back to
+  `DevMailboxSender` and then serve the whole outbox (live reset links included) to the
+  internet. `isLocalRequest()` is the gate that actually holds: a deployed Worker is only
+  reached on a hostname Cloudflare routes to it, so `localhost` is unreachable in production.
 - **`/api/dev/mailbox` lives under `/api/*`, not at a bare `/dev/mailbox` worker route** —
   `wrangler.toml`'s `run_worker_first` only covers `/api/*`; a bare `/dev/*` path would need
   its own entry there to ever reach the Worker (rather than the SPA shell) in a real deployment.
