@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, Link } from 'react-router';
 import { BottomTabBar } from './BottomTabBar';
 import { Search } from './Search';
+import { useUser, signOut } from '../modules/account';
 
 type Theme = 'light' | 'dark';
 
@@ -16,6 +17,35 @@ export function initialTheme(): Theme {
   const stored = localStorage.getItem(THEME_STORAGE_KEY);
   if (stored === 'dark' || stored === 'light') return stored;
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function UserMenu() {
+  const { state } = useUser();
+
+  if (state.status === 'loading' || state.status === 'error') return null;
+
+  if (state.status === 'unauthenticated') {
+    return (
+      <div className="flex items-center gap-2 text-sm">
+        <Link to="/sign-in">Sign in</Link>
+        <Link to="/sign-up">Sign up</Link>
+      </div>
+    );
+  }
+
+  async function handleSignOut() {
+    await signOut();
+    window.location.href = '/';
+  }
+
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span className="text-muted">{state.user.email}</span>
+      <button type="button" onClick={handleSignOut} className="underline">
+        Sign out
+      </button>
+    </div>
+  );
 }
 
 export function Layout() {
@@ -41,6 +71,7 @@ export function Layout() {
           <Link to="/blog">Blog</Link>
         </nav>
         <div className="flex items-center gap-2">
+          <UserMenu />
           <Search />
           <button
             type="button"
