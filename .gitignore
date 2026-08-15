@@ -4,6 +4,7 @@ dist-ssr
 .wrangler
 .turbo
 coverage
+*.tsbuildinfo
 *.local
 .DS_Store
 *.log
