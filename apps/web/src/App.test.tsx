@@ -10,6 +10,6 @@ describe('Home route', () => {
       </BrowserRouter>,
     );
 
-    expect(screen.getByText('Exemplar')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Exemplar' })).toBeTruthy();
   });
 });
