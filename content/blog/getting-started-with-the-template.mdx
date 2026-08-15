@@ -1,0 +1,49 @@
+---
+title: Getting started with the template
+description: A tour of what ships in the project template and how the pieces fit together.
+pubDate: 2026-01-12
+updatedDate: 2026-01-15
+heroImage: /blog/placeholder-hero.jpg
+draft: false
+tags: [guide, template]
+faqs:
+  - question: Does the template include a design system?
+    answer: Yes — a small set of semantic-token components (Layout, Button, Card, Input) ships out of the box.
+  - question: Can I remove the blog module later?
+    answer: Yes, see docs/modules/blog.md for the full removal checklist.
+---
+
+## Why this template exists
+
+Most projects start by copying an old repo and stripping bits out. This template flips
+that: it ships a deliberately small, working chassis — routing, a design system, SEO
+plumbing — so new products start from something that already runs.
+
+## What's included
+
+| Piece         | Where it lives                | Notes                              |
+| ------------- | ----------------------------- | ---------------------------------- |
+| Routing       | `apps/web/src/App.tsx`        | react-router 7                     |
+| Design tokens | `apps/web/tailwind.config.ts` | colours only via CSS vars          |
+| SEO registry  | `apps/web/src/seo.config.ts`  | `registerRoutes` contribution hook |
+
+## Setup checklist
+
+- [x] Install dependencies with `pnpm install`
+- [x] Run `pnpm check` to confirm a green baseline
+- [ ] Add your own routes and content
+
+## A minimal example
+
+```ts
+import { defineRoute } from './seo.config';
+
+defineRoute({
+  path: '/about',
+  title: 'About',
+  description: 'What we do and why.',
+});
+```
+
+Once you're comfortable with the shape of the chassis, the rest is just building
+your product on top of it.
