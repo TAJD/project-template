@@ -21,6 +21,22 @@ gaps" below for why it does not also gate on `emailVerified`):
   a "Subscribe" CTA wired to the existing `startCheckout()` flow (same as `PricingPage`).
 - **Subscribed** (`active`/`trialing`) — the sample premium content.
 
+### The gate is client-side only — do not copy it for real premium content
+
+`GatedSamplePage` decides what to render from `useSubscription()`, which reads
+`GET /api/billing/subscription`. That call is authenticated (`requireUser`), so an
+unauthenticated visitor genuinely cannot learn a subscription's status — but the
+_content_ it gates is a static string compiled into the client bundle. Anyone can read
+it out of the shipped JS, or flip the state in a debugger, without ever paying. That is
+fine here (the "premium content" is a placeholder sentence with no value) and it is what
+keeps the page a pure front-end demo, but it is not an access-control boundary.
+
+A stamped project putting real paid content behind this page must serve that content
+from the worker, from a route that re-checks the subscription server-side — i.e. a
+handler behind `requireUser` that calls `getSubscription()` and 403s on a non-`active`/
+`trialing` status — and have the page fetch it. Treat the three client states as
+presentation only; the server route is the gate.
+
 It is registered in `apps/web/src/App.tsx` (`/members`) and in the main nav
 (`apps/web/src/components/Layout.tsx`, alongside Home/Blog) rather than only being
 reachable via the pricing/account flow — it's meant to be one click away for anyone
