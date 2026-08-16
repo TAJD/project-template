@@ -18,11 +18,36 @@ export class StripeApiError extends Error {
   }
 }
 
+// Static safety net (PT-15's safety-guard test suite): this template has no
+// real Stripe account, and every test mocks `fetch` rather than hitting
+// Stripe's live API — nothing here has ever exercised a real live-mode key.
+// A live secret key ending up in an env var by misconfiguration (e.g. a
+// stamped project's local `.dev.vars` accidentally pointing at production)
+// would otherwise start making real charges the first time this module runs.
+// This is the single choke point every outbound Stripe call passes through,
+// so refusing here — before any network request is made — protects
+// `createStripeCustomer`, `createCheckoutSession`, and `createPortalSession`
+// alike without needing the guard duplicated at each call site.
+export class LiveModeKeyError extends Error {
+  constructor() {
+    super('Refusing to call the Stripe API with a live-mode secret key (sk_live_...).');
+    this.name = 'LiveModeKeyError';
+  }
+}
+
+function assertNotLiveKey(secretKey: string): void {
+  if (secretKey.startsWith('sk_live_')) {
+    throw new LiveModeKeyError();
+  }
+}
+
 async function stripeRequest<T>(
   secretKey: string,
   path: string,
   params: Record<string, string>,
 ): Promise<T> {
+  assertNotLiveKey(secretKey);
+
   const response = await fetch(`${STRIPE_API}/${path}`, {
     method: 'POST',
     headers: {

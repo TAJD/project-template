@@ -10,6 +10,7 @@ export interface StripeSubscriptionObject {
   status: string;
   currentPeriodEnd: number;
   priceId: string;
+  cancelAtPeriodEnd: boolean;
 }
 
 export interface StripeWebhookEvent {
@@ -39,7 +40,8 @@ export function parseStripeEvent(raw: string): StripeWebhookEvent | null {
 
 export function parseSubscriptionObject(object: unknown): StripeSubscriptionObject | null {
   if (typeof object !== 'object' || object === null) return null;
-  const { id, customer, status, current_period_end, items } = object as Record<string, unknown>;
+  const { id, customer, status, current_period_end, items, cancel_at_period_end } =
+    object as Record<string, unknown>;
   if (
     typeof id !== 'string' ||
     typeof customer !== 'string' ||
@@ -58,7 +60,14 @@ export function parseSubscriptionObject(object: unknown): StripeSubscriptionObje
   const priceId = typeof first?.price?.id === 'string' ? first.price.id : null;
   if (!priceId) return null;
 
-  return { id, customer, status, currentPeriodEnd: current_period_end, priceId };
+  return {
+    id,
+    customer,
+    status,
+    currentPeriodEnd: current_period_end,
+    priceId,
+    cancelAtPeriodEnd: cancel_at_period_end === true,
+  };
 }
 
 // Insert-or-skip dedup, done as a single atomic upsert rather than a

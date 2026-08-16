@@ -7,6 +7,7 @@ export interface SubscriptionEventData {
   status: string;
   priceId: string;
   currentPeriodEnd: Date;
+  cancelAtPeriodEnd?: boolean;
 }
 
 export async function getSubscription(db: Database, userId: string): Promise<Subscription | null> {
@@ -72,6 +73,7 @@ export async function applySubscriptionEvent(
     status: event.status,
     priceId: event.priceId,
     currentPeriodEnd: event.currentPeriodEnd,
+    cancelAtPeriodEnd: event.cancelAtPeriodEnd ?? false,
     lastEventCreatedAt: eventCreatedAt,
     updatedAt: new Date(),
   };

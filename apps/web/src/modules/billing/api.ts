@@ -8,6 +8,10 @@ export interface Subscription {
   status: string;
   priceId: string;
   currentPeriodEnd: string;
+  // Optional so existing PricingPage/GatedSamplePage test fixtures that predate
+  // PT-15's cancel-at-period-end story don't all need updating — an absent
+  // value reads the same as `false`, matching AuthUser.emailVerified's convention.
+  cancelAtPeriodEnd?: boolean;
 }
 
 interface SubscriptionResponse {
