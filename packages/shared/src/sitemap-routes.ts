@@ -1,7 +1,10 @@
 export type SitemapEntry = { loc: string; lastmod?: string };
 
-export function buildSitemapEntries(routes: { path: string }[]): SitemapEntry[] {
-  return routes.map((route) => ({ loc: route.path }));
+// Routes flagged `noindex` (see RouteMeta) are still registered — they get a
+// real prerendered head and stay SPA-routable — but are deliberately left
+// out of the sitemap, which exists to tell crawlers what to index.
+export function buildSitemapEntries(routes: { path: string; noindex?: boolean }[]): SitemapEntry[] {
+  return routes.filter((route) => !route.noindex).map((route) => ({ loc: route.path }));
 }
 
 export function renderSitemapXml(entries: SitemapEntry[], baseUrl: string): string {

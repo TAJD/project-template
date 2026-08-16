@@ -17,6 +17,10 @@ export function renderHeadTags(meta: RouteMeta, baseUrl: string = DEFAULT_BASE_U
     lines.push(`<meta property="og:image" content="${escapeHtml(meta.ogImage)}" />`);
   }
 
+  if (meta.noindex) {
+    lines.push('<meta name="robots" content="noindex" />');
+  }
+
   const canonicalUrl = new URL(meta.path, baseUrl).toString();
   lines.push(`<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />`);
 

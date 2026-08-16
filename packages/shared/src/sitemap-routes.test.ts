@@ -6,6 +6,15 @@ describe('buildSitemapEntries', () => {
     const entries = buildSitemapEntries([{ path: '/' }, { path: '/about' }]);
     expect(entries).toEqual([{ loc: '/' }, { loc: '/about' }]);
   });
+
+  it('excludes routes flagged noindex', () => {
+    const entries = buildSitemapEntries([
+      { path: '/' },
+      { path: '/members', noindex: true },
+      { path: '/about' },
+    ]);
+    expect(entries).toEqual([{ loc: '/' }, { loc: '/about' }]);
+  });
 });
 
 describe('renderSitemapXml', () => {
