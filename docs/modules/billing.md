@@ -1,11 +1,113 @@
 # Billing module
 
 Stripe subscriptions: Checkout Session creation, customer-portal redirect, webhook
-signature verification + event-dedup + subscription mirror to D1, and a web-side
-pricing/upgrade page + `useSubscription()` hook — self-contained under its `modules/`
-roots (plus the documented touch-points below) so the module can be removed without
-touching unrelated code. Depends on the account module (PT-13's `requireUser` and
-delete-account cascade); nothing depends on billing yet (PT-15's gated page will).
+signature verification + event-dedup + subscription mirror to D1, a web-side
+pricing/upgrade page + `useSubscription()` hook, the gated sample page at `/members`,
+and a narrative story-test suite (PT-15) — self-contained under its `modules/` roots
+(plus the documented touch-points below) so the module can be removed without touching
+unrelated code. Depends on the account module (PT-13's `requireUser` and delete-account
+cascade); nothing else depends on billing.
+
+## Gated sample page (PT-15)
+
+`apps/web/src/modules/billing/GatedSamplePage.tsx`, mounted at `/members`, is the
+example site's living proof that account + billing compose end-to-end — the one page
+worth re-checking after every merge. It renders one of three states driven by
+`useUser()` + `useSubscription()`, gated strictly on subscription status (see "Known
+gaps" below for why it does not also gate on `emailVerified`):
+
+- **Signed out** — a register/sign-in prompt, no subscription check performed.
+- **Signed in, not subscribed** (`status` not in `{active, trialing}`) — a paywall with
+  a "Subscribe" CTA wired to the existing `startCheckout()` flow (same as `PricingPage`).
+- **Subscribed** (`active`/`trialing`) — the sample premium content.
+
+It is registered in `apps/web/src/App.tsx` (`/members`) and in the main nav
+(`apps/web/src/components/Layout.tsx`, alongside Home/Blog) rather than only being
+reachable via the pricing/account flow — it's meant to be one click away for anyone
+checking the example site still works, not buried behind a purchase.
+
+### SEO: registered but noindex
+
+`/members` is registered in `apps/web/src/seo.config.ts` with `noindex: true` (a new
+`RouteMeta` field, see `packages/shared/src/seo-types.ts`) rather than left out of the
+registry entirely. Registering it means it still gets prerendered with its own real
+`<head>` and stays SPA-routable on a hard refresh (the worker's generated
+`spa-routes.generated.ts` is built from the same registry); `noindex: true` makes
+`renderHeadTags()` emit `<meta name="robots" content="noindex" />` and makes
+`buildSitemapEntries()` (`packages/shared/src/sitemap-routes.ts`) exclude it from
+`sitemap.xml` — a gated page has nothing crawlers should index or list.
+
+## Narrative story-test suite (PT-15)
+
+`tests/integration/` at the repo root — not under `apps/worker/src/` — exercises the
+real webhook handler and real `applySubscriptionEvent`/D1-mirror logic end-to-end for
+each named scenario (mocking only the outbound Stripe HTTP calls, via
+`vi.stubGlobal('fetch', ...)`, same as every other billing test): `subscribe-happy-path`,
+`trial`, `cancel-at-period-end`, `cancel-immediate`, `refund`, `card-decline`,
+`out-of-order-webhook`, `dispute`, plus `safety-guard.test.ts` and `cleanup.test.ts`.
+Scenario names and structure are original to this codebase, written from the ticket's
+scenario list and this module's own webhook/state-machine code — no source was read
+from poker-puzzle, the private repo that list was inspired by.
+
+It lives at the repo root (not `apps/worker/src/`) so it reads as whole-system
+narrative behaviour rather than one module's unit tests, but it needs the same real
+workerd + D1 environment `apps/worker`'s own tests already have configured — rather
+than standing up a second `vitest-pool-workers` config, `apps/worker/vitest.config.ts`'s
+`test.include` points at both `src/**/*.test.ts` and
+`../../tests/integration/**/*.test.ts`, so `pnpm --filter @template/worker run test`
+(and therefore `pnpm check`) runs them as part of the same worker test run. `tests/`
+is a pnpm workspace member (`tests/integration/package.json`,
+`@template/integration-tests`) purely so `tsc`/`pnpm -r run typecheck` can resolve
+`vitest`/`drizzle-orm`/Cloudflare types from its own `node_modules` — it deliberately
+has **no** `test` script of its own, so test _execution_ only ever happens through
+`apps/worker`'s vitest-pool-workers config above, never standalone (these tests import
+`cloudflare:test`, which only exists inside that pool).
+
+### `cancel_at_period_end` — a second field alongside `status`
+
+The "cancel at period end" story needs to tell apart "still active, but scheduled to
+cancel when the period ends" from an immediate cancellation — Stripe represents this as
+a `customer.subscription.updated` event with `status: "active"` and
+`cancel_at_period_end: true` (it does not emit the terminal `.deleted`/`canceled` event
+until the period actually ends). `subscriptions.cancel_at_period_end` (migration
+`0003_stormy_the_watchers.sql`) is a new boolean column alongside `status` for exactly
+this — `applySubscriptionEvent()` now also carries it through
+`SubscriptionEventData.cancelAtPeriodEnd`, and `GET /api/billing/subscription` exposes
+it on the response.
+
+### `charge.dispute.created` and `charge.refunded` — deliberate no-ops
+
+Neither event type is in `SUBSCRIPTION_EVENT_TYPES`, so the webhook route's existing
+"acknowledge and skip any other event type" behaviour already handles both without any
+new code. This is called out explicitly rather than left implicit because both look
+like they _should_ do something at a glance:
+
+- **`charge.refunded`** is a charge-level event, not a statement about subscription
+  status. A refund does not itself mean the subscription should be cancelled — Stripe
+  only does that in response to a separate subscription-status event, which arrives as
+  its own `customer.subscription.updated`/`.deleted` webhook (already covered by the
+  cancel story tests).
+- **`charge.dispute.created`** is deliberately _not_ wired to auto-cancel the
+  subscription. Auto-cancelling on a dispute would let a webhook payload alone revoke
+  access — including on a fraudulent dispute — without a human ever reviewing it. The
+  correct response to a dispute is a human-reviewed process (a stamped project would
+  wire this to an ops alert), not an automatic D1 mutation.
+
+`tests/integration/refund.test.ts` and `tests/integration/dispute.test.ts` assert this
+no-op behaviour directly against the real webhook route.
+
+### Stripe live-key safety guard
+
+`apps/worker/src/modules/billing/stripe-client.ts`'s `stripeRequest()` — the single
+choke point every exported function (`createStripeCustomer`, `createCheckoutSession`,
+`createPortalSession`) calls through — now throws `LiveModeKeyError` before making any
+network request if the secret key starts with `sk_live_`. This template has no real
+Stripe account and every test mocks `fetch` rather than hitting Stripe's live API, so
+nothing here has ever exercised a real live-mode key; this is a static safety net
+against a future misconfiguration (e.g. a stamped project's local `.dev.vars`
+accidentally pointing at a production secret), asserted in
+`tests/integration/safety-guard.test.ts` with a fake `sk_live_...` string — no real
+Stripe credentials needed.
 
 ## Core architectural rule: D1 is the query surface
 
@@ -115,7 +217,8 @@ dashboard), not an expected path in normal operation.
   `subscriptions`, `stripeEvents` tables and their re-exports, alongside the account
   module's tables.
 - **`apps/worker/migrations/`** — `0002_soft_shriek.sql`, the generated migration for
-  the three tables above.
+  the three tables above, and `0003_stormy_the_watchers.sql`, which adds
+  `subscriptions.cancel_at_period_end`.
 - **`apps/worker/src/modules/auth/delete-account.ts`** — `accountDeletionStatements()`
   extended with `db.delete(subscriptions)...` and `db.delete(customers)...`, ahead of
   the existing `sessions`/`authTokens`/`users` deletes in the same atomic `db.batch()`.
@@ -123,10 +226,22 @@ dashboard), not an expected path in normal operation.
   user id, and holds no personal data (a dedup ledger, not user-owned state).
 - **`apps/worker/src/modules/billing/`** — all billing route/client/webhook/subscription
   module code.
-- **`apps/web/src/App.tsx`** — imports `PricingPage` from `./modules/billing` and mounts
-  `/pricing`.
+- **`apps/web/src/App.tsx`** — imports `PricingPage`/`GatedSamplePage` from
+  `./modules/billing` and mounts `/pricing` and `/members`.
+- **`apps/web/src/components/Layout.tsx`** — the "Members" main-nav link to `/members`.
+- **`apps/web/src/seo.config.ts`** — the `/members` route registration (`noindex: true`).
 - **`apps/web/src/modules/billing/`** — all module code (api client, `useSubscription()`
-  hook, `PricingPage`).
+  hook, `PricingPage`, `GatedSamplePage`).
+- **`packages/shared/src/seo-types.ts`** / **`head-tags.ts`** / **`sitemap-routes.ts`** —
+  the `RouteMeta.noindex` field and its effect on `renderHeadTags()`/
+  `buildSitemapEntries()`. Shared by every module's routes, not billing-specific, so
+  removing billing does **not** mean reverting these — only the `/members` route entry
+  that uses the field.
+- **`tests/integration/`** — the PT-15 story-test suite and its `package.json`/
+  `tsconfig.json` (a pnpm workspace member purely for type resolution, see above).
+- **`apps/worker/vitest.config.ts`** — the `test.include` entry pointing at
+  `../../tests/integration/**/*.test.ts`.
+- **`pnpm-workspace.yaml`** — the `tests/*` package glob.
 - **`scripts/stripe-tunnel.mjs`** / **`scripts/stripe-tunnel.ps1`** — local dev helper
   that runs `stripe listen --forward-to <worker-url>/api/billing/webhook` via the Stripe
   CLI (not installed or invoked by this repo's own tooling — the CLI and a `stripe
@@ -134,28 +249,37 @@ login` are a separate, one-time developer setup step).
 
 ## Removal steps
 
-1. In `apps/web/src/App.tsx`, remove the `import { PricingPage } from './modules/billing'`
-   line and the `/pricing` `<Route>` entry.
-2. Delete `apps/web/src/modules/billing/`.
-3. In `apps/worker/src/index.ts`, remove the `import { billing } from './modules/billing'`
+1. In `apps/web/src/App.tsx`, remove the
+   `import { PricingPage, GatedSamplePage } from './modules/billing'` line and the
+   `/pricing` and `/members` `<Route>` entries.
+2. In `apps/web/src/components/Layout.tsx`, remove the "Members" nav `<Link>`.
+3. In `apps/web/src/seo.config.ts`, remove the `/members` route entry.
+4. Delete `apps/web/src/modules/billing/`.
+5. In `apps/worker/src/index.ts`, remove the `import { billing } from './modules/billing'`
    line and the `app.route('/api/billing', billing)` call.
-4. Delete `apps/worker/src/modules/billing/`.
-5. In `apps/worker/src/modules/auth/delete-account.ts`, remove the `db.delete(subscriptions)`
+6. Delete `apps/worker/src/modules/billing/`.
+7. Delete `tests/integration/` and remove the `tests/*` entry from `pnpm-workspace.yaml`.
+8. In `apps/worker/vitest.config.ts`, remove the `../../tests/integration/**/*.test.ts`
+   entry from `test.include` (or the whole `include` override if nothing else needs it).
+9. In `apps/worker/src/modules/auth/delete-account.ts`, remove the `db.delete(subscriptions)`
    and `db.delete(customers)` statements (and the now-unused `customers`/`subscriptions`
    imports) from `accountDeletionStatements()`.
-6. In `apps/worker/src/db/schema.ts` and `apps/worker/src/db/index.ts`, remove the
-   `customers`, `subscriptions`, and `stripeEvents` table definitions/exports — unless
-   another module still reads D1 (the account module already does, so `src/db/` itself
-   stays).
-7. In `apps/worker/src/env.ts`, remove `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and
-   `STRIPE_PRICE_ID`.
-8. In `apps/worker/wrangler.toml`, remove the billing comment block and any deployed
-   `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` secrets (`wrangler secret delete ...`).
-9. Delete `scripts/stripe-tunnel.mjs` and `scripts/stripe-tunnel.ps1`.
-10. A new Drizzle migration (`pnpm --filter @template/worker run db:generate` after step 6) will emit `DROP TABLE` statements for `customers`/`subscriptions`/`stripe_events`
-    — run it rather than hand-deleting `0002_soft_shriek.sql`, since earlier deployments
-    may already have applied it.
-11. Run `pnpm check` to confirm the rest of the suite is still green with the module gone.
+10. In `apps/worker/src/db/schema.ts` and `apps/worker/src/db/index.ts`, remove the
+    `customers`, `subscriptions`, and `stripeEvents` table definitions/exports — unless
+    another module still reads D1 (the account module already does, so `src/db/` itself
+    stays).
+11. In `apps/worker/src/env.ts`, remove `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and
+    `STRIPE_PRICE_ID`.
+12. In `apps/worker/wrangler.toml`, remove the billing comment block and any deployed
+    `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` secrets (`wrangler secret delete ...`).
+13. Delete `scripts/stripe-tunnel.mjs` and `scripts/stripe-tunnel.ps1`.
+14. A new Drizzle migration (`pnpm --filter @template/worker run db:generate` after step 10) will emit `DROP TABLE` statements for `customers`/`subscriptions`/`stripe_events`
+    — run it rather than hand-deleting `0002_soft_shriek.sql`/`0003_stormy_the_watchers.sql`,
+    since earlier deployments may already have applied them.
+15. `RouteMeta.noindex`, `renderHeadTags()`'s robots-tag handling, and
+    `buildSitemapEntries()`'s noindex filter (`packages/shared/`) are **not**
+    billing-specific — leave them in place even though nothing else currently uses them.
+16. Run `pnpm check` to confirm the rest of the suite is still green with the module gone.
 
 ## Known gaps / deliberate deviations
 
@@ -199,8 +323,17 @@ put` and a real webhook endpoint/`stripe listen` session — neither is set up h
   `Idempotency-Key` header for exactly this; not wired up here as it's a hardening step
   beyond what the ticket's Verify criteria call for (which cover the webhook-side
   idempotency/ordering guarantees, not outbound-call idempotency).
-- **`PricingPage` treats any status in `{active, trialing}` as "subscribed", everything
-  else (including `past_due`, `unpaid`, `canceled`, `incomplete`) as "not subscribed."**
-  This is a simplification for the example site — a production app usually wants a
-  distinct "payment failed, update your card" state for `past_due`/`unpaid` rather than
-  folding it into the same "please subscribe" CTA as a user who never subscribed at all.
+- **`PricingPage`/`GatedSamplePage` both treat any status in `{active, trialing}` as
+  "subscribed", everything else (including `past_due`, `unpaid`, `canceled`,
+  `incomplete`, and an active-but-`cancel_at_period_end` subscription) as "not
+  subscribed."** This is a simplification for the example site — a production app
+  usually wants a distinct "payment failed, update your card" state for
+  `past_due`/`unpaid`, and a "your access ends on `<date>`" state for
+  `cancel_at_period_end`, rather than folding every non-active status into the same
+  "please subscribe" CTA as a user who never subscribed at all.
+- **`GatedSamplePage` gates strictly on subscription status, not `emailVerified`.** A
+  prior security review found `emailVerified` is currently decorative — nothing reads it
+  (tracked as PT-39, not yet fixed). Gating the sample premium content on it as well
+  would have meant inventing new unreviewed security-sensitive logic on top of a known
+  gap rather than fixing PT-39 itself, so `GatedSamplePage` deliberately gates on
+  subscription status alone, exactly as the ticket's three states describe.
