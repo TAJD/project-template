@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Session ending — before you stop: is `pnpm check` green, and did you `git push`? See AGENTS.md > Session-completion checklist.'"
+          }
+        ]
+      }
+    ]
+  }
+}
