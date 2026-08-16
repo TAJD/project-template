@@ -1,4 +1,4 @@
-import type { ComponentProps } from 'react';
+import { useId, type ComponentProps } from 'react';
 
 // ComponentProps<'input'> (rather than InputHTMLAttributes) so callers can pass
 // `ref` straight through — React 19 treats it as an ordinary prop.
@@ -7,7 +7,8 @@ interface InputProps extends ComponentProps<'input'> {
 }
 
 export function Input({ label, id, className = '', ...props }: InputProps) {
-  const inputId = id ?? props.name;
+  const generatedId = useId();
+  const inputId = id ?? props.name ?? generatedId;
 
   return (
     <div className="flex flex-col gap-1">

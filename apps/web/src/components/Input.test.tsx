@@ -8,4 +8,12 @@ describe('Input', () => {
     const input = screen.getByLabelText('Email');
     expect(input.tagName).toBe('INPUT');
   });
+
+  it('associates the label with the input when neither id nor name is given', () => {
+    render(<Input label="Email" />);
+
+    const input = screen.getByLabelText('Email');
+    expect(input.tagName).toBe('INPUT');
+    expect(input.id).toBeTruthy();
+  });
 });
