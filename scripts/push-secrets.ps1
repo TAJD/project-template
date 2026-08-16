@@ -73,22 +73,32 @@ foreach ($line in Get-Content $VarsFile) {
     $vars[$key] = $value
 }
 
-$workerDir = Join-Path $PSScriptRoot "..\apps\worker"
 $wranglerArgs = @()
 if ($Env) { $wranglerArgs += @("--env", $Env) }
 
-foreach ($name in $SecretNames) {
-    if (-not $vars.ContainsKey($name) -or [string]::IsNullOrWhiteSpace($vars[$name])) {
-        Write-Host "  skip   $name (not set in $VarsFile)" -ForegroundColor Yellow
-        continue
-    }
+# wrangler is a devDependency of apps/worker, not a global — resolve it through
+# pnpm, as the root `deploy` script does. Filter by relative path rather than by
+# package name, because `@template/worker` is a stamp-time rename target
+# (docs/new-project.md step 2) and a stale name-based filter matches nothing
+# while still exiting 0.
+Push-Location (Join-Path $PSScriptRoot "..")
+try {
+    foreach ($name in $SecretNames) {
+        if (-not $vars.ContainsKey($name) -or [string]::IsNullOrWhiteSpace($vars[$name])) {
+            Write-Host "  skip   $name (not set in $VarsFile)" -ForegroundColor Yellow
+            continue
+        }
 
-    Write-Host "  push   $name" -ForegroundColor Cyan
-    $vars[$name] | & wrangler secret put $name --cwd $workerDir @wranglerArgs
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "wrangler secret put $name failed (exit $LASTEXITCODE)"
-        exit $LASTEXITCODE
+        Write-Host "  push   $name" -ForegroundColor Cyan
+        $vars[$name] | & pnpm --filter ./apps/worker exec wrangler secret put $name @wranglerArgs
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "wrangler secret put $name failed (exit $LASTEXITCODE)"
+            exit $LASTEXITCODE
+        }
     }
+}
+finally {
+    Pop-Location
 }
 
 Write-Host "Done. Never push TEST_AUTH_TOKEN — see script header." -ForegroundColor Green

@@ -1,7 +1,7 @@
 // Regression test for PT-18's dry-run finding: ensure-web-dist.mjs used to
 // shell out to `pnpm --filter web run build`, a name-based filter that
-// silently matches nothing (and exits non-zero) once apps/web/package.json
-// is renamed per docs/new-project.md's own stamp-a-new-project instructions.
+// matches nothing — and still exits 0 — once apps/web/package.json is renamed
+// per docs/new-project.md's own stamp-a-new-project instructions.
 // This exercises the script end-to-end against a fake workspace with a
 // *renamed* web package and a stub `pnpm` on PATH, asserting the script
 // still finds and "builds" it.
@@ -39,8 +39,9 @@ test('ensure-web-dist.mjs builds apps/web even when its package.json name is not
 
     // Fake `pnpm` on PATH: only "builds" (creates dist/) when invoked with a
     // path-style filter (starts with "./" or "../"), never for a bare
-    // package-name filter — reproducing the "no projects matched" failure
-    // mode for a name-based filter against a renamed package.
+    // package-name filter. The `existsSync(dist)` assertion below is what
+    // actually pins the behaviour; the shim's non-zero exit for a name filter
+    // is just a louder signal than real pnpm's silent exit 0.
     const binDir = path.join(root, 'bin');
     mkdirSync(binDir, { recursive: true });
     const isWin = process.platform === 'win32';
