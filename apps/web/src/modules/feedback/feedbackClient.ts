@@ -14,15 +14,15 @@ export function isFeedbackEnabled(): boolean {
   return Boolean(import.meta.env.VITE_FEEDBACK_ENDPOINT);
 }
 
-export function submitFeedback(payload: FeedbackPayload): Promise<Response> {
+export async function submitFeedback(payload: FeedbackPayload): Promise<Response> {
   const endpoint = import.meta.env.VITE_FEEDBACK_ENDPOINT;
   const token = import.meta.env.VITE_FEEDBACK_TOKEN;
 
   if (!endpoint) {
-    return Promise.reject(new Error('VITE_FEEDBACK_ENDPOINT is not set'));
+    throw new Error('VITE_FEEDBACK_ENDPOINT is not set');
   }
 
-  return fetch(endpoint, {
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -30,4 +30,13 @@ export function submitFeedback(payload: FeedbackPayload): Promise<Response> {
     },
     body: JSON.stringify(payload),
   });
+
+  // `fetch` only rejects on a network-level failure, so without this an
+  // endpoint answering 401 (wrong token), 429 (rate limited) or 500 would
+  // still look like a successful submission to the caller.
+  if (!response.ok) {
+    throw new Error(`Feedback endpoint responded with ${response.status}`);
+  }
+
+  return response;
 }

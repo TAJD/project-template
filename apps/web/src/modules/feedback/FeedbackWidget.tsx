@@ -11,6 +11,11 @@ interface FeedbackWidgetProps {
 
 type Status = 'idle' | 'submitting' | 'sent' | 'error';
 
+// The receiving endpoint is a public write surface with no auth beyond a
+// bundle-visible token, so keep the body it can be handed bounded here too
+// rather than relying on the server alone to reject a huge comment.
+const COMMENT_MAX_LENGTH = 2000;
+
 export function FeedbackWidget({ mode = 'default' }: FeedbackWidgetProps) {
   const { pathname } = useLocation();
   const [rating, setRating] = useState<FeedbackPayload['rating']>(null);
@@ -66,6 +71,7 @@ export function FeedbackWidget({ mode = 'default' }: FeedbackWidgetProps) {
         onChange={(event) => setComment(event.target.value)}
         placeholder="Any feedback? (optional)"
         rows={2}
+        maxLength={COMMENT_MAX_LENGTH}
         className="rounded-md border border-rule bg-paper px-3 py-2 text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       />
       {status === 'error' && (

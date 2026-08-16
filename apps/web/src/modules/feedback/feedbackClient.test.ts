@@ -51,5 +51,12 @@ describe('feedbackClient', () => {
       const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
       expect(init.headers).not.toHaveProperty('authorization');
     });
+
+    it('rejects when the endpoint answers with an error status', async () => {
+      vi.stubEnv('VITE_FEEDBACK_ENDPOINT', 'https://example.com/feedback');
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 429 })));
+
+      await expect(submitFeedback({ rating: 'up', page: '/members' })).rejects.toThrow(/429/);
+    });
   });
 });

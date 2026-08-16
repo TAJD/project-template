@@ -45,12 +45,23 @@ must be prefixed `VITE_` and are set in `apps/web/.env` (gitignored; copy from
   a lightweight anti-spam token (e.g. to scope a projektor feedback source), never as
   an access-control credential — don't reuse a real secret here.
 
+## What the receiving endpoint has to do
+
+The widget is an unauthenticated public write surface: `VITE_FEEDBACK_TOKEN` is in the
+shipped bundle, so it identifies the source, it does not authenticate the sender. The
+client bounds the comment at 2000 characters and treats any non-2xx response as a
+failure, but everything that actually matters is the endpoint's job — rate-limit by IP,
+cap the request body, and treat `comment`/`page` as untrusted text (escape on render;
+never interpolate into HTML, SQL, or a shell). The widget itself never renders anything
+the server sends back, only a fixed success or error string, so a hostile response
+cannot inject content into the page.
+
 ## Payload shape
 
 ```ts
 {
   rating: 'up' | 'down' | null; // null in comment-only mode, or if neither thumb was picked
-  comment?: string;             // omitted when the comment box was left empty
+  comment?: string;             // omitted when the comment box was left empty; capped at 2000 chars
   page: string;                 // the pathname the widget was mounted on
 }
 ```

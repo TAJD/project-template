@@ -87,6 +87,26 @@ describe('FeedbackWidget', () => {
     );
   });
 
+  it('caps the comment length rather than POSTing an unbounded body', () => {
+    vi.stubEnv('VITE_FEEDBACK_ENDPOINT', 'https://example.com/feedback');
+    renderWidget();
+
+    const textarea = screen.getByPlaceholderText(/any feedback/i) as HTMLTextAreaElement;
+    expect(textarea.maxLength).toBe(2000);
+  });
+
+  it('shows an error message when the endpoint answers with an error status', async () => {
+    vi.stubEnv('VITE_FEEDBACK_ENDPOINT', 'https://example.com/feedback');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 500 })));
+
+    renderWidget();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Send feedback' }));
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.queryByText('Thanks for the feedback.')).toBeNull();
+  });
+
   it('shows an error message when the request fails', async () => {
     vi.stubEnv('VITE_FEEDBACK_ENDPOINT', 'https://example.com/feedback');
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
