@@ -8,7 +8,9 @@ later steps assume earlier ones are done.
 
 2. **Rename the project.**
    - `package.json` (root) — `"name"` field (currently `project-template`).
-   - `apps/web/package.json` — `"name"` field (currently `web`).
+   - `apps/web/package.json` — `"name"` field (currently `web`). If you
+     change it, also update every `pnpm --filter web ...` reference
+     (`AGENTS.md`, `README.md`) to the new name.
    - `apps/worker/package.json` — `"name"` field (currently `@template/worker`).
      If you change this, also update every `@template/worker` reference (e.g.
      the root `deploy` script: `pnpm --filter @template/worker exec wrangler
