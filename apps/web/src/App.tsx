@@ -11,7 +11,7 @@ import {
   DevMailboxPage,
   SettingsPage,
 } from './modules/account';
-import { PricingPage } from './modules/billing';
+import { PricingPage, GatedSamplePage } from './modules/billing';
 
 const siteConfig: SiteConfig = { name: 'Exemplar' };
 
@@ -40,6 +40,7 @@ export default function App() {
         <Route path="/dev/mailbox" element={<DevMailboxPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/members" element={<GatedSamplePage />} />
       </Route>
     </Routes>
   );

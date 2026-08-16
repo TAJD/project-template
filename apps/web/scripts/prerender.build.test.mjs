@@ -53,9 +53,9 @@ describe('web build pipeline', () => {
     const entry = JSON.parse(
       readFileSync(path.join(webDir, 'dist', 'pagefind', 'pagefind-entry.json'), 'utf-8'),
     );
-    // Home + /blog + the two published posts. A regression to shell-only
-    // prerendering would drop this back to 1.
-    expect(entry.languages.en.page_count).toBe(4);
+    // Home + /blog + the two published posts + /members. A regression to
+    // shell-only prerendering would drop this back to 1.
+    expect(entry.languages.en.page_count).toBe(5);
 
     const postHtml = readFileSync(
       path.join(webDir, 'dist', 'blog', 'getting-started-with-the-template', 'index.html'),

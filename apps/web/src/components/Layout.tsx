@@ -70,6 +70,11 @@ export function Layout() {
         <nav aria-label="Main" className="hidden gap-4 md:flex">
           <Link to="/">Home</Link>
           <Link to="/blog">Blog</Link>
+          {/* Members is in the main nav (rather than reached only via
+              pricing/account) because it's the deliberate account+billing
+              proof surface (PT-15) — it should be one click away for anyone
+              checking the example site still works, not buried. */}
+          <Link to="/members">Members</Link>
         </nav>
         <div className="flex items-center gap-2">
           <UserMenu />

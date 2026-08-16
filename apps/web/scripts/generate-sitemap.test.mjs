@@ -3,7 +3,7 @@ import { buildSitemapEntries, renderSitemapXml } from '@template/shared';
 import { routes } from '../src/seo.config.ts';
 
 describe('sitemap generation against the real route registry', () => {
-  it('produces well-formed XML containing every registered route', () => {
+  it('produces well-formed XML containing every registered, indexable route', () => {
     const entries = buildSitemapEntries(routes);
     const xml = renderSitemapXml(entries, 'https://example.com');
 
@@ -11,7 +11,16 @@ describe('sitemap generation against the real route registry', () => {
     expect(routes.length).toBeGreaterThan(0);
     for (const route of routes) {
       const expectedLoc = new URL(route.path, 'https://example.com').toString();
-      expect(xml).toContain(`<loc>${expectedLoc}</loc>`);
+      if (route.noindex) {
+        expect(xml).not.toContain(`<loc>${expectedLoc}</loc>`);
+      } else {
+        expect(xml).toContain(`<loc>${expectedLoc}</loc>`);
+      }
     }
+  });
+
+  it('excludes the noindex gated members route', () => {
+    const entries = buildSitemapEntries(routes);
+    expect(entries.some((entry) => entry.loc === '/members')).toBe(false);
   });
 });
