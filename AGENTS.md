@@ -43,6 +43,13 @@ Root (`package.json`):
 
 `packages/shared`: `build`, `typecheck`, `test`
 
+Not wired into `package.json` (run directly):
+
+- `scripts/push-secrets.ps1` — pushes `.dev.vars` secrets to the deployed
+  Worker via `wrangler secret put`. See `docs/new-project.md` step 5.
+- `scripts/stripe-tunnel.ps1` / `.mjs` — forwards Stripe webhooks to a local
+  `wrangler dev`.
+
 ## Invariants
 
 These are enforced by the current code, not aspirational — each was checked
@@ -95,6 +102,13 @@ against source before being written down here.
   pnpm's peer-dependency auto-install can pull a version that ignores an
   `overrides` entry for the same package pulled in transitively. Check
   `pnpm why <pkg>` if a version looks wrong after adding overrides.
+- **`pnpm --filter <name>` exits 0 when nothing matches.** A filter that
+  matches no project prints "No projects matched the filters" and exits
+  **0**, so a stale filter fails silently rather than loudly. Package names
+  here (`web`, `@template/worker`, `@template/shared`) are all stamp-time
+  rename targets (`docs/new-project.md` step 2) — in scripts, prefer a
+  relative-path filter (`--filter ./apps/web`), which survives the rename.
+  See `apps/worker/scripts/ensure-web-dist.mjs`.
 - **Coverage thresholds start at 0.** `apps/web/vite.config.ts` sets
   `coverage.thresholds` (lines/functions/branches/statements) to `0` as the
   starting baseline — see the ratchet rule below.

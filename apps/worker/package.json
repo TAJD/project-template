@@ -7,7 +7,7 @@
     "dev": "wrangler dev",
     "build": "wrangler deploy --dry-run --outdir dist",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node scripts/ensure-web-dist.mjs && vitest run",
+    "test": "node scripts/ensure-web-dist.mjs && node --test scripts/*.test.mjs && vitest run",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
