@@ -2,8 +2,7 @@ import { NavLink } from 'react-router';
 
 const tabs = [
   { to: '/', label: 'Home' },
-  { to: '/explore', label: 'Explore' },
-  { to: '/profile', label: 'Profile' },
+  { to: '/blog', label: 'Blog' },
 ];
 
 export function BottomTabBar() {
