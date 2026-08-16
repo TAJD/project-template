@@ -86,6 +86,15 @@ export const subscriptions = sqliteTable('subscriptions', {
   status: text('status').notNull(),
   priceId: text('price_id').notNull(),
   currentPeriodEnd: integer('current_period_end', { mode: 'timestamp' }).notNull(),
+  // Stripe's own "cancel at period end" flag: true means the subscription
+  // is scheduled to cancel when `currentPeriodEnd` arrives but is still
+  // `active` until then (a `customer.subscription.updated` event, not
+  // `.deleted` — Stripe doesn't emit the terminal `deleted`/`canceled`
+  // event until the period actually ends). Distinct from `status`, which is
+  // why PT-15's "cancel at period end" story test needs both: the CTA on a
+  // gated page should read "your access ends on <date>" rather than
+  // treating a scheduled cancellation the same as an already-canceled one.
+  cancelAtPeriodEnd: integer('cancel_at_period_end', { mode: 'boolean' }).notNull().default(false),
   lastEventCreatedAt: integer('last_event_created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });

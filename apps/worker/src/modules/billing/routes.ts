@@ -32,6 +32,7 @@ billing.get('/subscription', requireUser, async (c) => {
       status: subscription.status,
       priceId: subscription.priceId,
       currentPeriodEnd: subscription.currentPeriodEnd.toISOString(),
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
     },
   });
 });
@@ -133,6 +134,7 @@ billing.post('/webhook', async (c) => {
               status: subscription.status,
               priceId: subscription.priceId,
               currentPeriodEnd: new Date(subscription.currentPeriodEnd * 1000),
+              cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
             },
             new Date(event.created * 1000),
           );

@@ -83,6 +83,16 @@ describe('renderHeadTags', () => {
     );
   });
 
+  it('omits the robots meta tag when noindex is not set', () => {
+    const html = renderHeadTags(meta);
+    expect(html).not.toContain('name="robots"');
+  });
+
+  it('renders a noindex robots meta tag when noindex is set', () => {
+    const html = renderHeadTags({ ...meta, noindex: true });
+    expect(html).toContain('<meta name="robots" content="noindex" />');
+  });
+
   it('escapes HTML-sensitive characters in title and description', () => {
     const html = renderHeadTags({
       path: '/',

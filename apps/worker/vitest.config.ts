@@ -7,6 +7,15 @@ export default defineWorkersConfig(async () => {
 
   return {
     test: {
+      // PT-15's narrative story-test suite lives at the repo root
+      // (`tests/integration/`, not under `apps/worker/src/`) so it reads as
+      // whole-system behaviour rather than one module's unit tests, but it
+      // needs the same real workerd + D1 environment this project already
+      // has configured here — pointing this pool at both globs, rather than
+      // standing up a second vitest-pool-workers config, is the
+      // least-surprising way to get it running in `pnpm check` without
+      // duplicating the wrangler/miniflare wiring.
+      include: ['src/**/*.{test,spec}.ts', '../../tests/integration/**/*.{test,spec}.ts'],
       setupFiles: ['./src/test/apply-migrations.ts'],
       poolOptions: {
         workers: {
