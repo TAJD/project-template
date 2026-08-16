@@ -1,4 +1,5 @@
 import { useParams } from 'react-router';
+import { FeedbackWidget } from '../feedback/FeedbackWidget';
 import { getPostBySlug } from './posts';
 import { NotFound } from './NotFound';
 
@@ -21,6 +22,9 @@ export function BlogPostPage() {
       <div className="blog-content mt-4">
         <Component />
       </div>
+      <footer className="mt-8">
+        <FeedbackWidget />
+      </footer>
     </article>
   );
 }
