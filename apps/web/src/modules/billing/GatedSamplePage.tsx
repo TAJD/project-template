@@ -4,6 +4,7 @@ import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { useUser } from '../account/useUser';
 import { AuthApiError } from '../account/api';
+import { FeedbackWidget } from '../feedback/FeedbackWidget';
 import { useSubscription } from './useSubscription';
 import { startCheckout } from './api';
 
@@ -76,6 +77,9 @@ function PremiumContent() {
       <p className="mt-2 text-muted">
         This is the sample premium content — visible only to a subscribed account.
       </p>
+      <div className="mt-4">
+        <FeedbackWidget />
+      </div>
     </Card>
   );
 }
