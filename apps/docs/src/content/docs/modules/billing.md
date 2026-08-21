@@ -270,40 +270,39 @@ login` are a separate, one-time developer setup step).
 
 ## Removal steps
 
-1. In `apps/web/src/App.tsx`, remove the
-   `import { PricingPage, GatedSamplePage } from './modules/billing'` line and the
-   `/pricing` and `/members` `<Route>` entries.
-2. In `apps/web/src/components/Layout.tsx`, remove the "Members" nav `<Link>`.
+1. Delete `apps/web/src/modules/billing/`.
+2. Remove billing's entries from `apps/web/src/modules.config.tsx`: the
+   `/pricing` and `/members` routes from `moduleRoutes`, the `/members` entry
+   from `moduleNavLinks`, and the now-unused import.
 3. In `apps/web/src/seo.config.ts`, remove the `/members` route entry.
-4. Delete `apps/web/src/modules/billing/`.
-5. In `apps/worker/src/index.ts`, remove the `import { billing } from './modules/billing'`
+4. In `apps/worker/src/index.ts`, remove the `import { billing } from './modules/billing'`
    line and the `app.route('/api/billing', billing)` call.
-6. Delete `apps/worker/src/modules/billing/`.
-7. Delete `tests/integration/` and remove the `tests/*` entry from `pnpm-workspace.yaml`.
-8. In `apps/worker/vitest.config.ts`, remove the `../../tests/integration/**/*.test.ts`
+5. Delete `apps/worker/src/modules/billing/`.
+6. Delete `tests/integration/` and remove the `tests/*` entry from `pnpm-workspace.yaml`.
+7. In `apps/worker/vitest.config.ts`, remove the `../../tests/integration/**/*.test.ts`
    entry from `test.include` (or the whole `include` override if nothing else needs it).
-9. In `apps/worker/src/modules/auth/delete-account.ts`, remove the `db.delete(subscriptions)`
+8. In `apps/worker/src/modules/auth/delete-account.ts`, remove the `db.delete(subscriptions)`
    and `db.delete(customers)` statements (and the now-unused `customers`/`subscriptions`
    imports) from `accountDeletionStatements()`.
-10. In `apps/worker/src/db/schema.ts` and `apps/worker/src/db/index.ts`, remove the
-    `customers`, `subscriptions`, and `stripeEvents` table definitions/exports — unless
-    another module still reads D1 (the account module already does, so `src/db/` itself
-    stays).
-11. In `apps/worker/src/env.ts`, remove `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and
+9. In `apps/worker/src/db/schema.ts` and `apps/worker/src/db/index.ts`, remove the
+   `customers`, `subscriptions`, and `stripeEvents` table definitions/exports — unless
+   another module still reads D1 (the account module already does, so `src/db/` itself
+   stays).
+10. In `apps/worker/src/env.ts`, remove `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and
     `STRIPE_PRICE_ID`.
-12. In `apps/worker/wrangler.toml`, remove the billing comment block and any deployed
+11. In `apps/worker/wrangler.toml`, remove the billing comment block and any deployed
     `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` secrets (`wrangler secret delete ...`).
-13. Delete `scripts/stripe-tunnel.mjs` and `scripts/stripe-tunnel.ps1`.
-14. A new Drizzle migration (`pnpm --filter @template/worker run db:generate` after step 10) will emit `DROP TABLE` statements for `customers`/`subscriptions`/`stripe_events`
+12. Delete `scripts/stripe-tunnel.mjs` and `scripts/stripe-tunnel.ps1`.
+13. A new Drizzle migration (`pnpm --filter @template/worker run db:generate` after step 9) will emit `DROP TABLE` statements for `customers`/`subscriptions`/`stripe_events`
     — run it rather than hand-deleting `0002_soft_shriek.sql`/`0003_stormy_the_watchers.sql`,
     since earlier deployments may already have applied them.
-15. `RouteMeta.noindex`, `renderHeadTags()`'s robots-tag handling, and
+14. `RouteMeta.noindex`, `renderHeadTags()`'s robots-tag handling, and
     `buildSitemapEntries()`'s noindex filter (`packages/shared/`) are **not**
     billing-specific — leave them in place even though nothing else currently uses them.
-16. Delete this page (`apps/docs/src/content/docs/modules/billing.md`) and the links
+15. Delete this page (`apps/docs/src/content/docs/modules/billing.md`) and the links
     to it from the modules index and the new-project checklist — a broken internal
     link fails the docs build.
-17. Run `pnpm check` to confirm the rest of the suite is still green with the module gone.
+16. Run `pnpm check` to confirm the rest of the suite is still green with the module gone.
 
 ## Known gaps / deliberate deviations
 
