@@ -69,6 +69,14 @@ simple = { limit = 10, period = 60 }
 #                                                # (see scripts/stripe-tunnel.mjs)
 # STRIPE_PRICE_ID = "price_..."
 
+# R2 range-request proxy module (PT-44, see docs/modules/r2-proxy.md). With
+# DATA_BUCKET unset the /data/* route 404s on every request, so a project
+# that hasn't provisioned a bucket yet still builds and deploys clean.
+# Uncomment and run `wrangler r2 bucket create <bucket-name>` first:
+# [[r2_buckets]]
+# binding = "DATA_BUCKET"
+# bucket_name = "<bucket-name>"
+
 [build]
 # `apply-d1-migrations-on-build.mjs` only runs `wrangler d1 migrations
 # apply` when the build is a Cloudflare Workers Builds run on `main` (see

@@ -25,6 +25,11 @@ export default defineWorkersConfig(async () => {
             // so it never ships with a deploy — see the comment in
             // wrangler.toml and modules/auth/test-auth.ts.
             bindings: { TEST_MIGRATIONS: migrations, TEST_AUTH_TOKEN: 'local-test-auth-token' },
+            // DATA_BUCKET (see modules/r2-proxy/) ships commented out in
+            // wrangler.toml so deploys opt in explicitly, but the test env
+            // still needs a working local bucket to exercise the module —
+            // miniflare provisions an in-memory one keyed by binding name.
+            r2Buckets: ['DATA_BUCKET'],
           },
         },
       },
