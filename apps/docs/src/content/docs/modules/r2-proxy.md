@@ -55,6 +55,14 @@ size)`, no I/O. Returns `{ type: 'none' | 'single' | 'unsatisfiable' }`.
    `bucket_name`.
 3. Deploy. `DATA_BUCKET` is now bound and `/data/*` serves real objects.
 
+## This route is public
+
+`/data/*` has no auth check and serves with `access-control-allow-origin: *`.
+Any object put in `DATA_BUCKET` is readable by anyone who has (or guesses) its
+key, from any origin — the account module's sessions do not gate this route.
+Don't put anything non-public in `DATA_BUCKET`; if a project needs access
+control on served objects, add it to this module before enabling it.
+
 ## Same-origin content safety
 
 This route serves whatever `Content-Type` was set when an object was written
