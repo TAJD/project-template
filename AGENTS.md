@@ -109,6 +109,13 @@ against source before being written down here.
 
 ## Gotchas
 
+- **Dependabot auto-merge depends on a repo setting, not on this repo's
+  files.** `.github/workflows/dependabot-auto-merge.yml` queues every
+  Dependabot PR with `gh pr merge --auto`, which waits only if `main` has a
+  required status check. With no branch protection, "auto" means "now" and
+  the grouped weekly bump merges with CI unread. Neither that rule nor
+  "Allow auto-merge" is inherited by a repo created from this template — see
+  the new-project checklist, step 9.
 - **`pnpm run ci` vs `pnpm ci`.** This repo has no `ci` script in
   `package.json` — CI (`.github/workflows/check.yml`) runs
   `pnpm install --frozen-lockfile` then `pnpm check` directly. If you're

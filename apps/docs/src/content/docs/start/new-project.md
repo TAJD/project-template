@@ -98,25 +98,36 @@ deploy`) and `apps/worker/wrangler.toml`'s `name = "worker"`.
    `diagram-design` for architecture diagrams. Drop either by removing its
    entry from `enabledPlugins` (and `extraKnownMarketplaces`) in that file.
 
-9. **Add the template as a remote** so future template improvements can be
-   pulled in: `git remote add template <this-template-repo-url>`. The
-   merge-conflict conventions to follow are on the
-   [staying up to date](../updating/) page.
+9. **Turn on dependency updates.** `.github/dependabot.yml` and
+   `.github/workflows/dependabot-auto-merge.yml` come with the template, but
+   the two repo settings that make auto-merge safe do not — GitHub does not
+   copy settings into a repo made from a template. Set both:
+   - Settings → General → **Allow auto-merge**.
+   - A branch protection rule or ruleset on `main` **requiring the `check`
+     status check**. This is the gate: without it there is nothing for
+     auto-merge to wait on, and Dependabot PRs merge with CI unread.
 
-   **Renormalize line endings once**, now that the template ships a
-   `.gitattributes`: `git add --renormalize .` and commit the result. A repo
-   generated before `.gitattributes` landed may already have inconsistent
-   line endings committed (e.g. a CRLF file edited by a Windows text-mode
-   writer); this brings them in line without changing any content.
+   To opt out entirely, delete both files.
 
-10. **Delete unwanted modules.** For each module you don't need, follow the
+10. **Add the template as a remote** so future template improvements can be
+    pulled in: `git remote add template <this-template-repo-url>`. The
+    merge-conflict conventions to follow are on the
+    [staying up to date](../updating/) page.
+
+**Renormalize line endings once**, now that the template ships a
+`.gitattributes`: `git add --renormalize .` and commit the result. A repo
+generated before `.gitattributes` landed may already have inconsistent
+line endings committed (e.g. a CRLF file edited by a Windows text-mode
+writer); this brings them in line without changing any content.
+
+11. **Delete unwanted modules.** For each module you don't need, follow the
     "Removal steps" on its page —
     [account](../../modules/account/), [billing](../../modules/billing/),
     [blog](../../modules/blog/), [feedback](../../modules/feedback/),
     [R2 proxy](../../modules/r2-proxy/) — and run `pnpm check` after each
     deletion.
 
-11. **Deploy.** `pnpm run deploy` from the repo root (builds the workspace,
+12. **Deploy.** `pnpm run deploy` from the repo root (builds the workspace,
     then `wrangler deploy` from `apps/worker`), or connect a Cloudflare
     Workers Builds GitHub integration for deploy-on-push to `main` (dashboard
     setup, not scripted here).

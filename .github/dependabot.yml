@@ -1,16 +1,49 @@
+# Dependency updates. Grouped by ecosystem into one PR per week, and merged
+# automatically once `check` passes — see .github/workflows/dependabot-auto-merge.yml
+# for the CI gate that makes "automatically" safe.
 version: 2
+
 updates:
   - package-ecosystem: npm
-    directory: /
+    # Globs, so a new workspace package is covered without editing this file.
+    # Mirrors the `packages:` list in pnpm-workspace.yaml.
+    directories:
+      - '/'
+      - '/apps/*'
+      - '/packages/*'
+      - '/tests/*'
     schedule:
       interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/London
+    open-pull-requests-limit: 5
     groups:
-      npm-minor-patch:
+      npm:
+        patterns:
+          - '*'
         update-types:
+          - major
           - minor
           - patch
+    commit-message:
+      prefix: chore
+      include: scope
 
   - package-ecosystem: github-actions
-    directory: /
+    directory: '/'
     schedule:
       interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/London
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+        update-types:
+          - major
+          - minor
+          - patch
+    commit-message:
+      prefix: chore
