@@ -20,6 +20,7 @@ a real project.
 - `apps/web` — Vite 5 + React 19 + react-router 7, TypeScript, Tailwind (semantic tokens only, see below)
 - `apps/worker` — Cloudflare Worker, Hono, D1, Drizzle ORM
 - `packages/shared` — TypeScript types/utilities shared between web and worker (built to `dist/` and consumed via `workspace:*`)
+- `apps/docs` — Astro 7 + Starlight documentation site, published to GitHub Pages
 - `tests/integration` — cross-system story tests that run inside the worker's `vitest-pool-workers` environment (not standalone)
 
 ## Dev commands
@@ -43,10 +44,13 @@ Root (`package.json`):
 
 `packages/shared`: `build`, `typecheck`, `test`
 
+`apps/docs`: `pnpm --filter @template/docs dev` (Astro dev server), `build` (`astro build` then the `llms.txt` generator), `preview`, `typecheck` (`astro check`)
+
 Not wired into `package.json` (run directly):
 
 - `scripts/push-secrets.ps1` — pushes `.dev.vars` secrets to the deployed
-  Worker via `wrangler secret put`. See `docs/new-project.md` step 5.
+  Worker via `wrangler secret put`. See the new-project checklist
+  (`apps/docs/src/content/docs/start/new-project.md`) step 5.
 - `scripts/stripe-tunnel.ps1` / `.mjs` — forwards Stripe webhooks to a local
   `wrangler dev`.
 
@@ -106,7 +110,7 @@ against source before being written down here.
   matches no project prints "No projects matched the filters" and exits
   **0**, so a stale filter fails silently rather than loudly. Package names
   here (`web`, `@template/worker`, `@template/shared`) are all stamp-time
-  rename targets (`docs/new-project.md` step 2) — in scripts, prefer a
+  rename targets (new-project checklist step 2) — in scripts, prefer a
   relative-path filter (`--filter ./apps/web`), which survives the rename.
   See `apps/worker/scripts/ensure-web-dist.mjs`.
 - **Coverage thresholds start at 0.** `apps/web/vite.config.ts` sets

@@ -12,13 +12,13 @@
         STRIPE_WEBHOOK_SECRET- apps/worker/src/modules/billing/routes.ts
         TEST_LOGIN_SECRET    - apps/worker/src/modules/auth/test-auth.ts (tier-2
                                 smoke-test login; only push this if the deployment
-                                actually runs smoke tests, see docs/modules/account.md)
+                                actually runs smoke tests, see apps/docs/src/content/docs/modules/account.md)
 
     NOT pushed by this script, on purpose:
         TEST_AUTH_TOKEN - must never be a deployed secret. It's local-dev/CI
                           only, read from apps/worker/.dev.vars or vitest
                           miniflare bindings. See apps/worker/wrangler.toml
-                          and docs/modules/account.md.
+                          and apps/docs/src/content/docs/modules/account.md.
         STRIPE_PRICE_ID, EMAIL_FROM, LOG_LEVEL - these are non-secret vars,
                           set directly in apps/worker/wrangler.toml's [vars],
                           not via `wrangler secret put`.
@@ -79,7 +79,7 @@ if ($Env) { $wranglerArgs += @("--env", $Env) }
 # wrangler is a devDependency of apps/worker, not a global — resolve it through
 # pnpm, as the root `deploy` script does. Filter by relative path rather than by
 # package name, because `@template/worker` is a stamp-time rename target
-# (docs/new-project.md step 2) and a stale name-based filter matches nothing
+# (apps/docs/src/content/docs/start/new-project.md step 2) and a stale name-based filter matches nothing
 # while still exiting 0.
 Push-Location (Join-Path $PSScriptRoot "..")
 try {

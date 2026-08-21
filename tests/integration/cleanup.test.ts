@@ -11,7 +11,7 @@ import { deleteAccount } from '../../apps/worker/src/modules/auth/delete-account
 import { signIn } from './support';
 
 // Story: PT-13's delete-account cascade was extended by PT-14 to include the
-// billing tables (see docs/modules/billing.md's "Touch-points" — subscriptions
+// billing tables (see apps/docs/src/content/docs/modules/billing.md's "Touch-points" — subscriptions
 // and customers are deleted in the same atomic db.batch() ahead of
 // sessions/authTokens/users). This test proves that end-to-end from a real
 // signed-up-and-subscribed test user rather than trusting the comment: sign

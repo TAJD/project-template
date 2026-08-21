@@ -3,7 +3,7 @@
 // and the widget renders nothing rather than erroring. VITE_FEEDBACK_TOKEN
 // is a lightweight anti-spam token, not a secret — Vite bakes all VITE_*
 // vars into the client bundle, so it is inherently public (see
-// docs/modules/feedback.md).
+// apps/docs/src/content/docs/modules/feedback.md).
 export interface FeedbackPayload {
   rating: 'up' | 'down' | null;
   comment?: string;

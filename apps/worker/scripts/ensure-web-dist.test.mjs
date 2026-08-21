@@ -1,7 +1,7 @@
 // Regression test for PT-18's dry-run finding: ensure-web-dist.mjs used to
 // shell out to `pnpm --filter web run build`, a name-based filter that
 // matches nothing — and still exits 0 — once apps/web/package.json is renamed
-// per docs/new-project.md's own stamp-a-new-project instructions.
+// per apps/docs/src/content/docs/start/new-project.md's own stamp-a-new-project instructions.
 // This exercises the script end-to-end against a fake workspace with a
 // *renamed* web package and a stub `pnpm` on PATH, asserting the script
 // still finds and "builds" it.
@@ -29,7 +29,7 @@ test('ensure-web-dist.mjs builds apps/web even when its package.json name is not
     mkdirSync(scriptsDir, { recursive: true });
     mkdirSync(webDir, { recursive: true });
 
-    // Renamed per docs/new-project.md step 2 — this is the scenario that
+    // Renamed per apps/docs/src/content/docs/start/new-project.md step 2 — this is the scenario that
     // broke the old name-based `--filter web`.
     writeFileSync(path.join(webDir, 'package.json'), JSON.stringify({ name: 'acme-web' }));
 

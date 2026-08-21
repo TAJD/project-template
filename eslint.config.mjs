@@ -6,12 +6,24 @@ import jsxA11y from 'eslint-plugin-jsx-a11y';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**', '**/.wrangler/**'],
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/coverage/**',
+      '**/.wrangler/**',
+      'apps/docs/dist/**',
+      'apps/docs/.astro/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['apps/worker/scripts/**/*.mjs', 'apps/web/scripts/**/*.mjs', 'scripts/**/*.mjs'],
+    files: [
+      'apps/worker/scripts/**/*.mjs',
+      'apps/web/scripts/**/*.mjs',
+      'apps/docs/scripts/**/*.mjs',
+      'scripts/**/*.mjs',
+    ],
     languageOptions: {
       globals: { console: 'readonly', process: 'readonly', URL: 'readonly', fetch: 'readonly' },
     },

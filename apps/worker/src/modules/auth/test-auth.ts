@@ -34,7 +34,7 @@ export const testAuth = new Hono<{ Bindings: Env }>();
 //   so a leaked `TEST_LOGIN_SECRET` is equivalent to a full account
 //   takeover of any known address: treat it like a root credential, only
 //   provision it on deployments that actually run smoke tests, and rotate
-//   it on suspicion. See docs/modules/account.md for the full threat model.
+//   it on suspicion. See apps/docs/src/content/docs/modules/account.md for the full threat model.
 
 function sessionCookieOptions(c: Context, expires: Date) {
   return {

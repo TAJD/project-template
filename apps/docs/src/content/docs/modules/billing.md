@@ -1,4 +1,9 @@
-# Billing module
+---
+title: Billing module
+description: Stripe Checkout and customer portal, webhook verification with event dedup, a D1 subscription mirror, a gated sample page, and a narrative story-test suite.
+sidebar:
+  order: 2
+---
 
 Stripe subscriptions: Checkout Session creation, customer-portal redirect, webhook
 signature verification + event-dedup + subscription mirror to D1, a web-side
@@ -295,7 +300,10 @@ login` are a separate, one-time developer setup step).
 15. `RouteMeta.noindex`, `renderHeadTags()`'s robots-tag handling, and
     `buildSitemapEntries()`'s noindex filter (`packages/shared/`) are **not**
     billing-specific — leave them in place even though nothing else currently uses them.
-16. Run `pnpm check` to confirm the rest of the suite is still green with the module gone.
+16. Delete this page (`apps/docs/src/content/docs/modules/billing.md`) and the links
+    to it from the modules index and the new-project checklist — a broken internal
+    link fails the docs build.
+17. Run `pnpm check` to confirm the rest of the suite is still green with the module gone.
 
 ## Known gaps / deliberate deviations
 

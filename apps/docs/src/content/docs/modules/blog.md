@@ -1,4 +1,9 @@
-# Blog module
+---
+title: Blog module
+description: An MDX-backed blog with drafts, tags, RSS and Atom feeds, and full SEO registration — sitemap, OG images and prerendering.
+sidebar:
+  order: 3
+---
 
 An MDX-backed blog: routes, drafts, tags, and SEO registration, all self-contained so
 the module can be removed without touching unrelated code.
@@ -49,7 +54,10 @@ DraftPostPage, TagPage } from './modules/blog'` line and the four `<Route>` entr
 7. Remove the now-unused dependencies from `apps/web/package.json`:
    `@mdx-js/rollup`, `remark-gfm`, `remark-frontmatter`, `rehype-slug`, `gray-matter`.
    Run `pnpm install` afterwards.
-8. Run `pnpm check` to confirm the sitemap/registry tests and the rest of the suite
+8. Delete this page (`apps/docs/src/content/docs/modules/blog.md`) and the links
+   to it from the modules index and the new-project checklist — a broken internal
+   link fails the docs build.
+9. Run `pnpm check` to confirm the sitemap/registry tests and the rest of the suite
    are still green with the module gone.
 
 ## Feeds and search

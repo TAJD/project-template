@@ -6,4 +6,6 @@ dist-ssr
 coverage
 pnpm-lock.yaml
 apps/worker/src/spa-routes.generated.ts
+apps/docs/dist
+apps/docs/.astro
 .claude/settings.local.json

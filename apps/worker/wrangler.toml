@@ -56,9 +56,9 @@ simple = { limit = 10, period = 60 }
 # `wrangler secret put RESEND_API_KEY` for real deployments only. Its
 # absence in every local/dev/CI environment is what keeps
 # apps/worker/src/lib/email.ts on DevMailboxSender and /api/dev/mailbox
-# live by default (see docs/modules/account.md).
+# live by default (see apps/docs/src/content/docs/modules/account.md).
 
-# Billing module (PT-14, see docs/modules/billing.md). No real values belong
+# Billing module (PT-14, see apps/docs/src/content/docs/modules/billing.md). No real values belong
 # in this repo — this template ships with no Stripe account. STRIPE_PRICE_ID
 # identifies a product, not a credential, so it's fine as a var; the two
 # below are Worker secrets, set only via `wrangler secret put`:
@@ -69,7 +69,7 @@ simple = { limit = 10, period = 60 }
 #                                                # (see scripts/stripe-tunnel.mjs)
 # STRIPE_PRICE_ID = "price_..."
 
-# R2 range-request proxy module (PT-44, see docs/modules/r2-proxy.md). With
+# R2 range-request proxy module (PT-44, see apps/docs/src/content/docs/modules/r2-proxy.md). With
 # DATA_BUCKET unset the /data/* route 404s on every request, so a project
 # that hasn't provisioned a bucket yet still builds and deploys clean.
 # Uncomment and run `wrangler r2 bucket create <bucket-name>` first:

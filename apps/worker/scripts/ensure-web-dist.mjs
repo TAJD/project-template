@@ -14,7 +14,7 @@ if (existsSync(webDist)) {
 
 console.log('apps/web/dist missing, building apps/web...');
 // Filter by relative path, not package name — apps/web/package.json's
-// "name" is a stamp-time rename target (docs/new-project.md), and a
+// "name" is a stamp-time rename target (apps/docs/src/content/docs/start/new-project.md), and a
 // name-based `--filter web` matches nothing once it's renamed while still
 // exiting 0 ("No projects matched the filters"), so the missing dist/ only
 // surfaces later as an unrelated-looking test failure.
