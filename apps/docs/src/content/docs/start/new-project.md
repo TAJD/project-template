@@ -93,6 +93,11 @@ deploy`) and `apps/worker/wrangler.toml`'s `name = "worker"`.
    To drop the site instead: delete `apps/docs` and
    `.github/workflows/docs.yml`.
 
+   A stamped project also inherits two Claude Code plugins from
+   `.claude/settings.json` — `economist-style` for editing docs prose and
+   `diagram-design` for architecture diagrams. Drop either by removing its
+   entry from `enabledPlugins` (and `extraKnownMarketplaces`) in that file.
+
 9. **Add the template as a remote** so future template improvements can be
    pulled in: `git remote add template <this-template-repo-url>`. The
    merge-conflict conventions to follow are on the

@@ -54,6 +54,36 @@ Not wired into `package.json` (run directly):
 - `scripts/stripe-tunnel.ps1` / `.mjs` — forwards Stripe webhooks to a local
   `wrangler dev`.
 
+## Docs
+
+All prose docs live in `apps/docs/src/content/docs/**` and are published to
+GitHub Pages from `.github/workflows/docs.yml`. There is no second copy on
+disk and no sync script — edit the page, and the site is the page.
+
+- `pnpm --filter @template/docs dev` — Astro dev server
+- `pnpm --filter @template/docs build` — `astro build`, then the `llms.txt` generator
+- `pnpm --filter @template/docs typecheck` — `astro check`
+
+**This file stays canonical for agent instructions.** The site's architecture
+page summarises the invariants below and links here for the detail; it does not
+copy them. Edit an invariant in one place — this one.
+
+**A broken internal link fails the docs build.** `starlight-links-validator`
+runs as part of `astro build`, so renaming or deleting a page means fixing its
+inbound links in the same commit.
+
+Two plugins ship enabled in `.claude/settings.json`, so anyone opening this repo
+gets them without configuring their own machine:
+
+- **`economist-style`** — run `/economist-style` over new or edited docs prose
+  before committing it. Short words, active voice, no throat-clearing.
+- **`diagram-design`** — for architecture diagrams. Inline diagrams use a
+  `mermaid` code fence, which `astro-mermaid` renders in both themes; reach for
+  `diagram-design` when a fence is not enough.
+
+Do not add `.astro` component files. Prettier here has no Astro plugin, and we
+are not adding one.
+
 ## Invariants
 
 These are enforced by the current code, not aspirational — each was checked
