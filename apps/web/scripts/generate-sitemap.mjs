@@ -8,8 +8,7 @@ import { routes as staticRoutes } from '../src/seo.config.ts';
 // pulls in posts.ts, which relies on Vite-only `import.meta.glob`/virtual
 // modules. Read blog frontmatter off disk instead and build the same
 // routes via the shared, pure buildBlogRoutes().
-import { loadPublishedBlogEntries } from './lib/blog-content.mjs';
-import { buildBlogRoutes } from '../src/modules/blog/build-routes.ts';
+import { loadPublishedBlogEntries, loadBlogRoutes } from './lib/blog-content.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const webDir = path.resolve(scriptDir, '..');
@@ -20,8 +19,8 @@ const blogContentDir = path.resolve(webDir, '..', '..', 'content', 'blog');
 // the convention in packages/shared/src/head-tags.ts.
 const BASE_URL = 'https://example.com';
 
-function main() {
-  const blogRoutes = buildBlogRoutes(loadPublishedBlogEntries(blogContentDir));
+async function main() {
+  const blogRoutes = await loadBlogRoutes(loadPublishedBlogEntries(blogContentDir));
   const routes = [...staticRoutes, ...blogRoutes];
   const entries = buildSitemapEntries(routes);
   const xml = renderSitemapXml(entries, BASE_URL);
@@ -30,5 +29,5 @@ function main() {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main();
+  await main();
 }
