@@ -27,6 +27,11 @@ one from scratch.
   and POSTs to any HTTP endpoint (e.g. a Projektor feedback source). The
   reference example of a minimal, cleanly-removable module. See
   `docs/modules/feedback.md`.
+- **R2 range-request proxy** — a `/data/*` worker route serving R2 objects with
+  correct `Accept-Ranges`/`206`/`Content-Range`/suffix-range support, for
+  anything that seeks into a large object (client-side analytics, media
+  scrubbing, resumable downloads). Opt-in — 404s until a bucket is bound. See
+  `docs/modules/r2-proxy.md`.
 - **SEO/sitemap registry** — a single-source route registry
   (`apps/web/src/seo.config.ts`) that prerendering, the sitemap, and feeds
   all read from, plus a live SEO audit script (`pnpm seo:live`).

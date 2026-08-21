@@ -29,4 +29,9 @@ export interface Env extends RateLimitBindings {
   // The single subscription price this example site offers. A plain var
   // (not a secret) — it identifies a product, not a credential.
   STRIPE_PRICE_ID?: string;
+  // R2 range-request proxy module (see modules/r2-proxy/,
+  // docs/modules/r2-proxy.md). Optional — the route 404s on every request
+  // when unset, so a project that hasn't provisioned a bucket yet still
+  // builds and tests clean.
+  DATA_BUCKET?: R2Bucket;
 }

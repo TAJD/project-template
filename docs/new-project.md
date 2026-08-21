@@ -78,8 +78,8 @@ deploy`) and `apps/worker/wrangler.toml`'s `name = "worker"`.
 
 9. **Delete unwanted modules.** For each module you don't need, follow the
    "Removal steps" in its `docs/modules/*.md` file (`account.md`,
-   `billing.md`, `blog.md`, `feedback.md`) and run `pnpm check` after each
-   deletion.
+   `billing.md`, `blog.md`, `feedback.md`, `r2-proxy.md`) and run `pnpm check`
+   after each deletion.
 
 10. **Deploy.** `pnpm run deploy` from the repo root (builds the workspace,
     then `wrangler deploy` from `apps/worker`), or connect a Cloudflare
