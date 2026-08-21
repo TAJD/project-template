@@ -36,11 +36,10 @@ the module can be removed without touching unrelated code.
 
 ## Removal steps
 
-1. In `apps/web/src/App.tsx`, remove the `import { BlogListPage, BlogPostPage,
-DraftPostPage, TagPage } from './modules/blog'` line and the four `<Route>` entries
-   it added (`/blog`, `/blog/:slug`, `/draft/:slug`, `/tags/:tag`).
-2. In `apps/web/src/components/Layout.tsx`, remove the `<Link to="/blog">Blog</Link>`
-   nav entry.
+1. Delete `apps/web/src/modules/blog/` and `content/blog/`.
+2. Remove blog's entries from `apps/web/src/modules.config.tsx`: the `/blog`,
+   `/blog/:slug`, `/draft/:slug`, `/tags/:tag` routes from `moduleRoutes`, the
+   `/blog` entry from `moduleNavLinks`, and the now-unused import.
 3. In `apps/web/vite.config.ts`, remove the `mdx()` plugin entry, its
    `remark-gfm`/`remark-frontmatter`/`rehype-slug` imports, and the
    `blogFrontmatterPlugin` function plus its entry in the `plugins` array.
@@ -50,14 +49,13 @@ DraftPostPage, TagPage } from './modules/blog'` line and the four `<Route>` entr
    `generate-worker-routes.mjs`, remove the `loadPublishedBlogEntries`/`buildBlogRoutes`
    imports and collapse `[...staticRoutes, ...blogRoutes]` back to `staticRoutes`. Delete
    `apps/web/scripts/lib/blog-content.mjs`.
-6. Delete `apps/web/src/modules/blog/` and `content/blog/`.
-7. Remove the now-unused dependencies from `apps/web/package.json`:
+6. Remove the now-unused dependencies from `apps/web/package.json`:
    `@mdx-js/rollup`, `remark-gfm`, `remark-frontmatter`, `rehype-slug`, `gray-matter`.
    Run `pnpm install` afterwards.
-8. Delete this page (`apps/docs/src/content/docs/modules/blog.md`) and the links
+7. Delete this page (`apps/docs/src/content/docs/modules/blog.md`) and the links
    to it from the modules index and the new-project checklist — a broken internal
    link fails the docs build.
-9. Run `pnpm check` to confirm the sitemap/registry tests and the rest of the suite
+8. Run `pnpm check` to confirm the sitemap/registry tests and the rest of the suite
    are still green with the module gone.
 
 ## Feeds and search

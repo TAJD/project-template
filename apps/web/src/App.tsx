@@ -2,16 +2,7 @@ import { Routes, Route } from 'react-router';
 import type { SiteConfig } from '@template/shared';
 import { Layout } from './components/Layout';
 import { Card } from './components/Card';
-import { BlogListPage, BlogPostPage, DraftPostPage, TagPage } from './modules/blog';
-import {
-  SignInPage,
-  SignUpPage,
-  ResetRequestPage,
-  ResetPage,
-  DevMailboxPage,
-  SettingsPage,
-} from './modules/account';
-import { PricingPage, GatedSamplePage } from './modules/billing';
+import { moduleRoutes } from './modules.config';
 
 const siteConfig: SiteConfig = { name: 'Exemplar' };
 
@@ -29,18 +20,9 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
-        <Route path="/blog" element={<BlogListPage />} />
-        <Route path="/blog/:slug" element={<BlogPostPage />} />
-        <Route path="/draft/:slug" element={<DraftPostPage />} />
-        <Route path="/tags/:tag" element={<TagPage />} />
-        <Route path="/sign-up" element={<SignUpPage />} />
-        <Route path="/sign-in" element={<SignInPage />} />
-        <Route path="/reset-password" element={<ResetRequestPage />} />
-        <Route path="/reset-password/:token" element={<ResetPage />} />
-        <Route path="/dev/mailbox" element={<DevMailboxPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/members" element={<GatedSamplePage />} />
+        {moduleRoutes.map(({ path, element }) => (
+          <Route key={path} path={path} element={element} />
+        ))}
       </Route>
     </Routes>
   );

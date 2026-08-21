@@ -1,8 +1,9 @@
 import { NavLink } from 'react-router';
+import { moduleNavLinks } from '../modules.config';
 
 const tabs = [
   { to: '/', label: 'Home' },
-  { to: '/blog', label: 'Blog' },
+  ...moduleNavLinks.filter((link) => link.bottomTab).map(({ to, label }) => ({ to, label })),
 ];
 
 export function BottomTabBar() {

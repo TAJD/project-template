@@ -1,5 +1,6 @@
 export { SignUpPage } from './SignUpPage';
 export { SignInPage } from './SignInPage';
+export { UserMenu } from './UserMenu';
 export { VerifyPromptBanner } from './VerifyPromptBanner';
 export { ResetRequestPage } from './ResetRequestPage';
 export { ResetPage } from './ResetPage';

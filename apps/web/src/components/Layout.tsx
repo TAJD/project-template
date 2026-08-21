@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Outlet, Link } from 'react-router';
 import { BottomTabBar } from './BottomTabBar';
 import { Search } from './Search';
-import { useUser, signOut, VerifyPromptBanner } from '../modules/account';
+import { headerSlot, bannerSlot, moduleNavLinks } from '../modules.config';
 
 type Theme = 'light' | 'dark';
 
@@ -17,36 +17,6 @@ export function initialTheme(): Theme {
   const stored = localStorage.getItem(THEME_STORAGE_KEY);
   if (stored === 'dark' || stored === 'light') return stored;
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
-function UserMenu() {
-  const { state } = useUser();
-
-  if (state.status === 'loading') return null;
-
-  if (state.status === 'unauthenticated' || state.status === 'error') {
-    return (
-      <div className="flex items-center gap-2 text-sm">
-        <Link to="/sign-in">Sign in</Link>
-        <Link to="/sign-up">Sign up</Link>
-      </div>
-    );
-  }
-
-  async function handleSignOut() {
-    await signOut();
-    window.location.href = '/';
-  }
-
-  return (
-    <div className="flex items-center gap-2 text-sm">
-      <span className="text-muted">{state.user.email}</span>
-      <Link to="/settings">Settings</Link>
-      <button type="button" onClick={handleSignOut} className="underline">
-        Sign out
-      </button>
-    </div>
-  );
 }
 
 export function Layout() {
@@ -69,15 +39,18 @@ export function Layout() {
         </Link>
         <nav aria-label="Main" className="hidden gap-4 md:flex">
           <Link to="/">Home</Link>
-          <Link to="/blog">Blog</Link>
-          {/* Members is in the main nav (rather than reached only via
-              pricing/account) because it's the deliberate account+billing
-              proof surface (PT-15) — it should be one click away for anyone
-              checking the example site still works, not buried. */}
-          <Link to="/members">Members</Link>
+          {/* Nav entries (and any placement rationale, e.g. PT-15's Members
+              placement) live in modules.config.tsx. */}
+          {moduleNavLinks.map((link) => (
+            <Link key={link.to} to={link.to}>
+              {link.label}
+            </Link>
+          ))}
         </nav>
         <div className="flex items-center gap-2">
-          <UserMenu />
+          {headerSlot.map((Slot, i) => (
+            <Slot key={i} />
+          ))}
           <Search />
           <button
             type="button"
@@ -89,7 +62,9 @@ export function Layout() {
         </div>
       </header>
 
-      <VerifyPromptBanner />
+      {bannerSlot.map((Slot, i) => (
+        <Slot key={i} />
+      ))}
 
       <main className="flex-1 px-4 py-6 pb-20 md:pb-6">
         <Outlet />

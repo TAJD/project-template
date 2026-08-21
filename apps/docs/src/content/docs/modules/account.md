@@ -142,40 +142,37 @@ apply` only when `WORKERS_CI_BRANCH === 'main'` (Cloudflare Workers Builds); no-
 
 ## Removal steps
 
-1. In `apps/web/src/App.tsx`, remove the `import { SignInPage, SignUpPage, ResetRequestPage,
-ResetPage, DevMailboxPage, SettingsPage } from './modules/account'` line and the `/sign-in`,
-   `/sign-up`, `/reset-password`, `/reset-password/:token`, `/dev/mailbox`, and `/settings`
-   `<Route>` entries.
-2. In `apps/web/src/components/Layout.tsx`, remove the `UserMenu` component, its
-   `<UserMenu />` usage, `<VerifyPromptBanner />`, and the `useUser`/`signOut`/
-   `VerifyPromptBanner` import from `../modules/account`.
-3. Delete `apps/web/src/modules/account/`.
-4. In `apps/worker/src/index.ts`, remove the `import { auth, account, devMailbox, testAuth }
+1. Delete `apps/web/src/modules/account/`.
+2. Remove account's entries from `apps/web/src/modules.config.tsx`: the account
+   page routes (sign-in, sign-up, reset-password ×2, dev/mailbox, settings) from
+   `moduleRoutes`, and `UserMenu`/`VerifyPromptBanner` from `headerSlot`/
+   `bannerSlot` — plus the now-unused import at the top of the file.
+3. In `apps/worker/src/index.ts`, remove the `import { auth, account, devMailbox, testAuth }
 from './modules/auth'` line and the `app.route('/api/auth', auth)` /
    `app.route('/api/account', account)` / `app.route('/api/dev', devMailbox)` /
    `app.route('/api/test-auth', testAuth)` calls.
-5. Delete `apps/worker/src/modules/auth/`.
-6. In `apps/worker/src/lib/rate-limit.ts`, remove `AUTH_RATE_LIMITER` from
+4. Delete `apps/worker/src/modules/auth/`.
+5. In `apps/worker/src/lib/rate-limit.ts`, remove `AUTH_RATE_LIMITER` from
    `RateLimitBindings` (if no other module uses it). Delete `apps/worker/src/lib/email.ts`
    (and its test) unless billing has started reusing `EmailSender` for receipts.
-7. In `apps/worker/wrangler.toml`, remove the `[[unsafe.bindings]]` block for
+6. In `apps/worker/wrangler.toml`, remove the `[[unsafe.bindings]]` block for
    `AUTH_RATE_LIMITER`, the `TEST_AUTH_TOKEN` note (plus `apps/worker/.dev.vars.example` and
    the `TEST_AUTH_TOKEN` entry in `vitest.config.ts`'s bindings), the `RESEND_API_KEY` secret,
    any deployed `TEST_LOGIN_SECRET` secret, and — if no other module reads D1 — the
    `[[d1_databases]]` block and the `apply-d1-migrations-on-build.mjs` step from
    `[build].command`.
-8. Remove `RESEND_API_KEY`, `EMAIL_FROM`, `TEST_AUTH_TOKEN`, and `TEST_LOGIN_SECRET` from
+7. Remove `RESEND_API_KEY`, `EMAIL_FROM`, `TEST_AUTH_TOKEN`, and `TEST_LOGIN_SECRET` from
    `apps/worker/src/env.ts`.
-9. If no other module uses D1: delete `apps/worker/src/db/`, `apps/worker/migrations/`,
+8. If no other module uses D1: delete `apps/worker/src/db/`, `apps/worker/migrations/`,
    `apps/worker/drizzle.config.ts`, `apps/worker/src/test/apply-migrations.ts`,
    `apps/worker/src/test/env.d.ts`, revert `vitest.config.ts` to a plain
    `defineWorkersConfig({...})`, remove `DB` from `apps/worker/src/env.ts`, and remove
    `drizzle-orm`/`drizzle-kit` from `apps/worker/package.json`. Otherwise leave that
    infrastructure in place for whatever module still needs D1.
-10. Delete this page (`apps/docs/src/content/docs/modules/account.md`) and the links
-    to it from the modules index and the new-project checklist — a broken internal
-    link fails the docs build.
-11. Run `pnpm check` to confirm the rest of the suite is still green with the module gone.
+9. Delete this page (`apps/docs/src/content/docs/modules/account.md`) and the links
+   to it from the modules index and the new-project checklist — a broken internal
+   link fails the docs build.
+10. Run `pnpm check` to confirm the rest of the suite is still green with the module gone.
 
 ## Known gaps / deliberate deviations
 
