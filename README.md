@@ -64,3 +64,8 @@ and merging from it periodically. The merge-conflict conventions — what
 downstream should never blindly accept from an upstream merge (sample
 content, brand tokens, `TEMPLATE:` marker regions) and how to handle
 deleted-module conflicts — are documented in [`CHANGELOG.md`](CHANGELOG.md).
+
+## Developing on Windows
+
+Issues specific to Windows (not exercised by this template's Linux CI) are
+tracked in [`docs/windows-notes.md`](docs/windows-notes.md).
