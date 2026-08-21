@@ -58,8 +58,17 @@ own bucket layout.
 
 ## Known limitation
 
-`routes.test.ts` seeds R2 objects directly through the `env` binding outside
-a request's own execution context. On Windows this can trip the
-`@cloudflare/vitest-pool-workers` isolated-storage teardown failure — see
-[`docs/windows-notes.md`](../windows-notes.md). Not reproduced on the Linux
-CI runner this template uses.
+The two `HEAD /data/*` tests in `routes.test.ts` are skipped. An HTTP request
+with method `HEAD` that reads R2 storage crashes
+`@cloudflare/vitest-pool-workers@0.9.14`'s isolated-storage teardown —
+confirmed with a minimal repro (a bare Hono app doing nothing but one
+`bucket.head()` call, no ranges, no route mounting) that it's the HEAD
+method itself tripping the pop assertion, not this module's code. The
+identical R2 read through a GET request is fully covered by the tests above
+and passes clean. This reproduces on both Windows and Linux CI (see
+[`docs/windows-notes.md`](../windows-notes.md) for the separate, Windows-only
+R2 teardown flake this module also ran into). Fixing the HEAD issue needs a
+`vitest-pool-workers` version that requires vitest `^4.1.0`; this repo pins
+vitest `^2.1.x` workspace-wide, so the upgrade is out of scope here — tracked
+on the PT-50 epic's decision log. Re-enable the two skipped tests once that
+upgrade happens.
