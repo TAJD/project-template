@@ -44,6 +44,17 @@ describe('GET /data/*', () => {
     expect(res.headers.get('content-length')).toBe(String(BODY.length));
     expect(res.headers.get('access-control-allow-origin')).toBe('*');
     expect(res.headers.get('access-control-expose-headers')).toContain('Content-Range');
+    expect(res.headers.get('access-control-expose-headers')).toContain('ETag');
+  });
+
+  it('falls back to a default filename for a key with no basename', async () => {
+    const bucket = env.DATA_BUCKET;
+    if (!bucket) throw new Error('DATA_BUCKET is not configured in the test environment');
+    await bucket.put('dir/', 'placeholder');
+    const res = await run(new Request('http://localhost/data/dir/'));
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-disposition')).toBe('attachment; filename="download"');
+    await res.text();
   });
 
   it('forces attachment disposition and blocks MIME sniffing, so a maliciously-typed object cannot render as this origin', async () => {

@@ -33,11 +33,11 @@ function cacheControlFor(key: string): string {
 // subresource loads (<video src>, <img src>, fetch()), so it doesn't break
 // this module's own use cases (media scrubbing, duckdb-wasm reads).
 function baseHeaders(key: string, size: number, contentType: string, etag: string): HeadersInit {
-  const filename = key.slice(key.lastIndexOf('/') + 1).replace(/"/g, '');
+  const filename = key.slice(key.lastIndexOf('/') + 1).replace(/"/g, '') || 'download';
   return {
     'accept-ranges': 'bytes',
     'access-control-allow-origin': '*',
-    'access-control-expose-headers': 'Accept-Ranges, Content-Range, Content-Length',
+    'access-control-expose-headers': 'Accept-Ranges, Content-Range, Content-Length, ETag',
     'content-type': contentType,
     'content-disposition': `attachment; filename="${filename}"`,
     'x-content-type-options': 'nosniff',
@@ -76,25 +76,50 @@ async function handle(c: Context<{ Bindings: Env }>, method: 'GET' | 'HEAD') {
       }
       const object = await bucket.get(key);
       if (!object) return notFound().error;
+      // Content-length comes from this fetch's own size, not the earlier
+      // head() snapshot — if the object was overwritten with a different
+      // size in between, trusting the stale size promises a body length
+      // that this stream won't actually deliver, and the client stalls.
       return new Response(object.body, {
-        headers: { ...headers, 'content-length': String(size) },
+        headers: { ...headers, 'content-length': String(object.size) },
       });
     }
 
     const { start, end } = range;
     const length = end - start + 1;
-    const rangeHeaders = {
-      ...headers,
-      'content-range': `bytes ${start}-${end}/${size}`,
-      'content-length': String(length),
-    };
 
     if (method === 'HEAD') {
-      return new Response(null, { status: 206, headers: rangeHeaders });
+      return new Response(null, {
+        status: 206,
+        headers: {
+          ...headers,
+          'content-range': `bytes ${start}-${end}/${size}`,
+          'content-length': String(length),
+        },
+      });
     }
     const object = await bucket.get(key, { range: { offset: start, length } });
     if (!object) return notFound().error;
-    return new Response(object.body, { status: 206, headers: rangeHeaders });
+    // Same staleness guard as above, for the ranged case: derive the
+    // headers from what R2 actually served (object.range), not from the
+    // pre-fetch head() size.
+    const servedRange = object.range;
+    const servedOffset =
+      servedRange && 'offset' in servedRange && typeof servedRange.offset === 'number'
+        ? servedRange.offset
+        : start;
+    const servedLength =
+      servedRange && 'length' in servedRange && typeof servedRange.length === 'number'
+        ? servedRange.length
+        : length;
+    return new Response(object.body, {
+      status: 206,
+      headers: {
+        ...headers,
+        'content-range': `bytes ${servedOffset}-${servedOffset + servedLength - 1}/${object.size}`,
+        'content-length': String(servedLength),
+      },
+    });
   } catch (err) {
     return serverError(err, c.env.LOG_LEVEL).error;
   }
