@@ -70,6 +70,12 @@ deploy`) and `apps/worker/wrangler.toml`'s `name = "worker"`.
    pulled in: `git remote add template <this-template-repo-url>`. See
    `CHANGELOG.md` for the merge-conflict conventions to follow when you do.
 
+   **Renormalize line endings once**, now that the template ships a
+   `.gitattributes`: `git add --renormalize .` and commit the result. A repo
+   generated before `.gitattributes` landed may already have inconsistent
+   line endings committed (e.g. a CRLF file edited by a Windows text-mode
+   writer); this brings them in line without changing any content.
+
 9. **Delete unwanted modules.** For each module you don't need, follow the
    "Removal steps" in its `docs/modules/*.md` file (`account.md`,
    `billing.md`, `blog.md`, `feedback.md`) and run `pnpm check` after each
