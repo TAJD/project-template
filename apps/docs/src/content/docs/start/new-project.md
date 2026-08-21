@@ -1,7 +1,11 @@
-# New project checklist
+---
+title: New project checklist
+description: The steps that turn this template into a real project — renaming, re-tokening, provisioning Cloudflare, and deleting the modules you do not need.
+sidebar:
+  order: 2
+---
 
-Steps to stamp this template into a real project. Work through them in order —
-later steps assume earlier ones are done.
+Work through these in order — later steps assume earlier ones are done.
 
 1. **Use the GitHub template.** On GitHub, "Use this template" → create a new
    repository. Clone it locally.
@@ -29,13 +33,15 @@ deploy`) and `apps/worker/wrangler.toml`'s `name = "worker"`.
    `:root` block and the dark-mode overrides). Don't add raw Tailwind colors
    elsewhere — `apps/web/tailwind.config.ts` replaces Tailwind's palette
    entirely, so only these tokens resolve. Swap the font import too if the
-   project isn't using Inter.
+   project isn't using Inter. The docs site mirrors the same palette in
+   `apps/docs/src/styles/theme.css`; update it to match.
 
 4. **Replace `content/blog/`.** Delete the three sample posts
    (`getting-started-with-the-template.mdx`,
    `structured-data-without-the-headache.mdx`,
    `a-draft-post-in-progress.mdx`) and add real posts, or remove the blog
-   module entirely per `docs/modules/blog.md` if the project doesn't need one.
+   module entirely per the [blog module page](../../modules/blog/) if the
+   project doesn't need one.
 
 5. **Create Cloudflare resources and set secrets.**
    - `wrangler d1 create <db-name>` — paste the returned `database_id` into
@@ -51,8 +57,8 @@ deploy`) and `apps/worker/wrangler.toml`'s `name = "worker"`.
      (see that script's header for the exact list — currently
      `RESEND_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and
      optionally `TEST_LOGIN_SECRET` if the deployment runs smoke tests).
-     `TEST_AUTH_TOKEN` is intentionally never pushed as a secret — see
-     `docs/modules/account.md`.
+     `TEST_AUTH_TOKEN` is intentionally never pushed as a secret — see the
+     [account module page](../../modules/account/).
    - Set the `STRIPE_PRICE_ID` var in `apps/worker/wrangler.toml` if the
      billing module is staying.
 
@@ -64,11 +70,38 @@ deploy`) and `apps/worker/wrangler.toml`'s `name = "worker"`.
 7. **Create a Projektor feedback source** for the feedback widget module (if
    keeping it) — `mcp__projektor__create_feedback_source`. Put the returned
    endpoint URL and token in `apps/web/.env` as `VITE_FEEDBACK_ENDPOINT` /
-   `VITE_FEEDBACK_TOKEN` (see `docs/modules/feedback.md`).
+   `VITE_FEEDBACK_TOKEN` (see the
+   [feedback module page](../../modules/feedback/)).
 
-8. **Add the template as a remote** so future template improvements can be
-   pulled in: `git remote add template <this-template-repo-url>`. See
-   `CHANGELOG.md` for the merge-conflict conventions to follow when you do.
+8. **Point the docs site at your repo — or delete it.** `apps/docs` is this
+   site. To keep it:
+   - Edit the `TEMPLATE:` marker region at the top of
+     `apps/docs/astro.config.mjs` — `SITE`, `BASE`, `TITLE`, `DESCRIPTION`.
+     For a project Pages site at `https://<user>.github.io/<repo>/`, `BASE` is
+     `/<repo>`; for a user site or a custom domain it is `/`.
+   - Match the same values in the `TEMPLATE:` region of
+     `apps/docs/scripts/gen-llms-txt.mjs`.
+   - Fix the base-prefixed links in
+     `apps/docs/src/content/docs/index.mdx` — the only file that hard-codes
+     `/project-template/`.
+   - **Enable Pages by hand:** repo Settings → Pages → Source → "GitHub
+     Actions". The `.github/workflows/docs.yml` workflow fails until someone
+     does this; no workflow can do it for you.
+   - Delete this template's own pages (`start/`, `modules/`, `architecture/`)
+     and write your own.
+
+   To drop the site instead: delete `apps/docs` and
+   `.github/workflows/docs.yml`.
+
+   A stamped project also inherits two Claude Code plugins from
+   `.claude/settings.json` — `economist-style` for editing docs prose and
+   `diagram-design` for architecture diagrams. Drop either by removing its
+   entry from `enabledPlugins` (and `extraKnownMarketplaces`) in that file.
+
+9. **Add the template as a remote** so future template improvements can be
+   pulled in: `git remote add template <this-template-repo-url>`. The
+   merge-conflict conventions to follow are on the
+   [staying up to date](../updating/) page.
 
    **Renormalize line endings once**, now that the template ships a
    `.gitattributes`: `git add --renormalize .` and commit the result. A repo
@@ -76,12 +109,14 @@ deploy`) and `apps/worker/wrangler.toml`'s `name = "worker"`.
    line endings committed (e.g. a CRLF file edited by a Windows text-mode
    writer); this brings them in line without changing any content.
 
-9. **Delete unwanted modules.** For each module you don't need, follow the
-   "Removal steps" in its `docs/modules/*.md` file (`account.md`,
-   `billing.md`, `blog.md`, `feedback.md`, `r2-proxy.md`) and run `pnpm check`
-   after each deletion.
+10. **Delete unwanted modules.** For each module you don't need, follow the
+    "Removal steps" on its page —
+    [account](../../modules/account/), [billing](../../modules/billing/),
+    [blog](../../modules/blog/), [feedback](../../modules/feedback/),
+    [R2 proxy](../../modules/r2-proxy/) — and run `pnpm check` after each
+    deletion.
 
-10. **Deploy.** `pnpm run deploy` from the repo root (builds the workspace,
+11. **Deploy.** `pnpm run deploy` from the repo root (builds the workspace,
     then `wrangler deploy` from `apps/worker`), or connect a Cloudflare
     Workers Builds GitHub integration for deploy-on-push to `main` (dashboard
     setup, not scripted here).

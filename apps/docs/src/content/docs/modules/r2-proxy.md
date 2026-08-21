@@ -1,4 +1,9 @@
-# R2 range-request proxy module
+---
+title: R2 range-request proxy module
+description: A read-only /data/* route serving R2 objects with correct HTTP range support, for anything that seeks into a large object. Opt-in — it 404s until a bucket is bound.
+sidebar:
+  order: 5
+---
 
 A read-only `/data/*` route that serves R2 objects with correct HTTP range
 support: `Accept-Ranges`, `206` responses with `Content-Range`, suffix ranges
@@ -37,7 +42,10 @@ size)`, no I/O. Returns `{ type: 'none' | 'single' | 'unsatisfiable' }`.
 3. Remove the `DATA_BUCKET?: R2Bucket` field from `apps/worker/src/env.ts`.
 4. Remove the commented `[[r2_buckets]]` block from `apps/worker/wrangler.toml`.
 5. Remove `r2Buckets: ['DATA_BUCKET']` from `apps/worker/vitest.config.ts`.
-6. Run `pnpm check` to confirm the rest of the suite is still green with the
+6. Delete this page (`apps/docs/src/content/docs/modules/r2-proxy.md`) and the links
+   to it from the modules index and the new-project checklist — a broken internal
+   link fails the docs build.
+7. Run `pnpm check` to confirm the rest of the suite is still green with the
    module gone.
 
 ## Enabling it for a real deployment
@@ -78,7 +86,7 @@ confirmed with a minimal repro (a bare Hono app doing nothing but one
 method itself tripping the pop assertion, not this module's code. The
 identical R2 read through a GET request is fully covered by the tests above
 and passes clean. This reproduces on both Windows and Linux CI (see
-[`docs/windows-notes.md`](../windows-notes.md) for the separate, Windows-only
+[developing on Windows](../../start/windows-notes/) for the separate, Windows-only
 R2 teardown flake this module also ran into). Fixing the HEAD issue needs a
 `vitest-pool-workers` version that requires vitest `^4.1.0`; this repo pins
 vitest `^2.1.x` workspace-wide, so the upgrade is out of scope here — tracked

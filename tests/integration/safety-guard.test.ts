@@ -8,7 +8,7 @@ import {
 
 // This template has no real Stripe account and every other test in this
 // suite mocks `fetch` rather than hitting Stripe's live API (see
-// docs/modules/billing.md "Known gaps"). That means nothing here has ever
+// apps/docs/src/content/docs/modules/billing.md "Known gaps"). That means nothing here has ever
 // exercised a real live-mode secret key — so instead of skipping this
 // concern, this test asserts a static safety net: the Stripe client
 // construction (`stripeRequest`, the single choke point every exported

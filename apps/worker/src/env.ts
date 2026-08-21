@@ -20,7 +20,7 @@ export interface Env extends RateLimitBindings {
   // `/api/test-auth/prod-login` route 404s until a deployment deliberately
   // opts in.
   TEST_LOGIN_SECRET?: string;
-  // Billing module (see modules/billing/, docs/modules/billing.md). Both are
+  // Billing module (see modules/billing/, apps/docs/src/content/docs/modules/billing.md). Both are
   // Worker secrets (`wrangler secret put STRIPE_SECRET_KEY` /
   // `STRIPE_WEBHOOK_SECRET`), never wrangler.toml vars — unset in every
   // local/CI environment, which is what tests override per-request instead.
@@ -30,7 +30,7 @@ export interface Env extends RateLimitBindings {
   // (not a secret) — it identifies a product, not a credential.
   STRIPE_PRICE_ID?: string;
   // R2 range-request proxy module (see modules/r2-proxy/,
-  // docs/modules/r2-proxy.md). Optional — the route 404s on every request
+  // apps/docs/src/content/docs/modules/r2-proxy.md). Optional — the route 404s on every request
   // when unset, so a project that hasn't provisioned a bucket yet still
   // builds and tests clean.
   DATA_BUCKET?: R2Bucket;

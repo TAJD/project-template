@@ -1,7 +1,13 @@
-# Windows-specific gotchas
+---
+title: Developing on Windows
+description: Gotchas that only reproduce on Windows, which this template's Linux CI never exercises.
+sidebar:
+  order: 4
+---
 
-Issues that only reproduce on Windows, kept out of the shared config/docs above
-because they don't apply on the Linux runners this template's CI uses.
+Issues that only reproduce on Windows. They are kept here rather than in the
+shared config, because they do not apply on the Linux runners this template's CI
+uses.
 
 ## `@cloudflare/vitest-pool-workers` + an R2 bucket binding: "Isolated storage failed"
 

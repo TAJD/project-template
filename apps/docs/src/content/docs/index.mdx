@@ -1,0 +1,72 @@
+---
+title: project-template
+description: A pnpm-workspace starter for a React + Vite frontend and a Hono API on Cloudflare Workers, with deletable feature modules and a green quality gate from the first commit.
+template: splash
+hero:
+  tagline: Auth, billing, a blog, search and feedback already wired up on Cloudflare Workers — and every one of them documents how to delete itself.
+  actions:
+    - text: Quickstart
+      link: /project-template/start/quickstart/
+      icon: rocket
+      variant: primary
+    - text: New project checklist
+      link: /project-template/start/new-project/
+      icon: right-arrow
+    - text: GitHub
+      link: https://github.com/TAJD/project-template
+      icon: github
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+Most starters give you either a bare shell or a framework you cannot leave. This one
+gives you five working feature modules and the removal steps for each. Keep what the
+project needs, delete the rest, and `pnpm check` stays green either way.
+
+The stack is a pnpm workspace: a React 19 and Vite frontend, a Hono API on Cloudflare
+Workers with D1 and Drizzle, and a shared TypeScript package between them. Lint,
+format, typecheck, tests, CI, pre-commit hooks and a deploy path ship with it.
+
+<CardGrid stagger>
+  <Card title="Account" icon="seti:lock">
+    Users and sessions in D1, PBKDF2 password hashing, HttpOnly cookie sessions, email
+    verification and password reset, self-serve account settings, and two-tier test
+    auth for automated suites.
+
+    [Read the module page →](/project-template/modules/account/)
+
+  </Card>
+  <Card title="Billing" icon="seti:shell">
+    Stripe Checkout and customer portal, webhook signature verification with event
+    dedup, a subscription mirror in D1, and a story-test suite covering subscribe,
+    trial, cancel, refund and dispute.
+
+    [Read the module page →](/project-template/modules/billing/)
+
+  </Card>
+  <Card title="Blog and search" icon="open-book">
+    An MDX blog with drafts, tags and feeds, registered into the single-source SEO
+    route registry that prerendering and the sitemap read from. Search is Pagefind
+    over whatever is prerendered, so it is not blog-specific.
+
+    [Read the module page →](/project-template/modules/blog/)
+
+  </Card>
+  <Card title="Feedback" icon="approve-check">
+    A thumbs-up/down widget that posts to any HTTP endpoint, and renders nothing when
+    its env vars are unset. The smallest module here, and the reference case for how a
+    removable one is built.
+
+    [Read the module page →](/project-template/modules/feedback/)
+
+  </Card>
+</CardGrid>
+
+## Where to go next
+
+[Quickstart →](/project-template/start/quickstart/) ·
+[Stamp a new project →](/project-template/start/new-project/) ·
+[What a module is →](/project-template/modules/) ·
+[Architecture →](/project-template/architecture/overview/) ·
+[AGENTS.md, for coding agents →](https://github.com/TAJD/project-template/blob/main/AGENTS.md)

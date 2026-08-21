@@ -1,5 +1,5 @@
 // Shared helpers for the PT-15 narrative story-test suite. Scenario names
-// and structure are original to this codebase (see docs/modules/billing.md
+// and structure are original to this codebase (see apps/docs/src/content/docs/modules/billing.md
 // "Known gaps" and the design spec's billing section for the ideas being
 // exercised) — no source was read or copied from poker-puzzle, the private
 // repo the scenario list was inspired by; every helper here is written

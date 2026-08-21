@@ -6,7 +6,7 @@ import { authTokens, customers, sessions, subscriptions, users } from '../../db/
 // user-owned rows contributes one delete statement here, keyed on userId, so
 // a later module (billing) extends this array instead of adding its own
 // separate delete call that could partially fail independently of this one.
-// See docs/modules/account.md for the GDPR rationale for deleting rather
+// See apps/docs/src/content/docs/modules/account.md for the GDPR rationale for deleting rather
 // than soft-deleting/anonymising.
 //
 // `customers`/`subscriptions` (billing, PT-14) are included here — `users`

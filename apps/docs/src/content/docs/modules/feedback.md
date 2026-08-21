@@ -1,4 +1,9 @@
-# Feedback module
+---
+title: Feedback module
+description: A thumbs-up/down widget with an optional comment, env-gated and posting to any HTTP endpoint. The template’s reference case for a minimal, removable module.
+sidebar:
+  order: 4
+---
 
 The smallest module in the template — the demo case for a minimal, cleanly-removable
 module. A thumbs-up/thumbs-down + optional comment control that POSTs to a
@@ -28,7 +33,10 @@ configured.
 4. Remove the `VITE_FEEDBACK_ENDPOINT`/`VITE_FEEDBACK_TOKEN` entries from
    `apps/web/.env.example`, and the `ImportMetaEnv` additions from
    `apps/web/src/vite-env.d.ts`.
-5. Run `pnpm check` to confirm the rest of the suite is still green with the module
+5. Delete this page (`apps/docs/src/content/docs/modules/feedback.md`) and the links
+   to it from the modules index and the new-project checklist — a broken internal
+   link fails the docs build.
+6. Run `pnpm check` to confirm the rest of the suite is still green with the module
    gone.
 
 ## Environment variables

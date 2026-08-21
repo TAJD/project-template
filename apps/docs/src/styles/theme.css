@@ -1,0 +1,68 @@
+/*
+ * Docs theme — remaps Starlight's --sl-* variables onto the same semantic
+ * tokens apps/web uses (apps/web/src/index.css), so the site and the app share
+ * one palette. Starlight toggles light and dark on the same `data-theme`
+ * attribute the app does, so the mapping is direct.
+ *
+ * Downstream: re-token the app first, then mirror the new values here.
+ */
+
+@import '@fontsource-variable/inter';
+
+:root {
+  --sl-font: 'Inter Variable', system-ui, sans-serif;
+
+  /* Dark is Starlight's default. Mirrors --paper/--ink/--accent/... dark mode. */
+  --sl-color-accent-low: #1e3a8a;
+  --sl-color-accent: #3b82f6;
+  --sl-color-accent-high: #bfdbfe;
+
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #f4f4f5; /* --ink */
+  --sl-color-gray-2: #d4d4d8;
+  --sl-color-gray-3: #a1a1aa; /* --muted */
+  --sl-color-gray-4: #71717a;
+  --sl-color-gray-5: #3f3f46; /* --rule */
+  --sl-color-gray-6: #27272a; /* --elev */
+  --sl-color-gray-7: #1f1f23;
+  --sl-color-black: #18181b; /* --paper */
+
+  --sl-color-bg: #18181b;
+  --sl-color-bg-nav: #1f1f23;
+  --sl-color-bg-sidebar: #1f1f23;
+  --sl-color-bg-inline-code: #27272a;
+  --sl-color-hairline-light: #3f3f46;
+  --sl-color-hairline: #3f3f46;
+  --sl-color-hairline-shade: #27272a;
+  --sl-color-text-accent: #60a5fa; /* --accent, dark */
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #dbeafe;
+  --sl-color-accent: #2563eb; /* --accent, light */
+  --sl-color-accent-high: #1e3a8a;
+
+  --sl-color-white: #0a0a0a;
+  --sl-color-gray-1: #1a1a1a; /* --ink */
+  --sl-color-gray-2: #3f3f46;
+  --sl-color-gray-3: #6b7280; /* --muted */
+  --sl-color-gray-4: #9ca3af;
+  --sl-color-gray-5: #e5e7eb; /* --rule */
+  --sl-color-gray-6: #f3f4f6;
+  --sl-color-gray-7: #f9fafb; /* --elev */
+  --sl-color-black: #ffffff; /* --paper */
+
+  --sl-color-bg: #ffffff;
+  --sl-color-bg-nav: #ffffff;
+  --sl-color-bg-sidebar: #f9fafb;
+  --sl-color-bg-inline-code: #f3f4f6;
+  --sl-color-hairline-light: #e5e7eb;
+  --sl-color-hairline: #e5e7eb;
+  --sl-color-hairline-shade: #f3f4f6;
+  --sl-color-text-accent: #2563eb;
+}
+
+.site-title {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}

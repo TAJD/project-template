@@ -1,4 +1,9 @@
-# Account module
+---
+title: Account module
+description: Drizzle/D1 users and sessions, PBKDF2 password hashing, cookie sessions, email verification and password reset, account settings, and two-tier test auth.
+sidebar:
+  order: 1
+---
 
 Data layer and core auth: Drizzle/D1 users + sessions, WebCrypto PBKDF2 password hashing,
 HttpOnly cookie sessions, signup/sign-in/sign-out/`me`, email plumbing (email verification +
@@ -167,7 +172,10 @@ from './modules/auth'` line and the `app.route('/api/auth', auth)` /
    `defineWorkersConfig({...})`, remove `DB` from `apps/worker/src/env.ts`, and remove
    `drizzle-orm`/`drizzle-kit` from `apps/worker/package.json`. Otherwise leave that
    infrastructure in place for whatever module still needs D1.
-10. Run `pnpm check` to confirm the rest of the suite is still green with the module gone.
+10. Delete this page (`apps/docs/src/content/docs/modules/account.md`) and the links
+    to it from the modules index and the new-project checklist — a broken internal
+    link fails the docs build.
+11. Run `pnpm check` to confirm the rest of the suite is still green with the module gone.
 
 ## Known gaps / deliberate deviations
 

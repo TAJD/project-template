@@ -10,5 +10,23 @@
         ]
       }
     ]
+  },
+  "extraKnownMarketplaces": {
+    "economist-style-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "TAJD/economist-style-guide-plugin"
+      }
+    },
+    "diagram-design": {
+      "source": {
+        "source": "github",
+        "repo": "cathrynlavery/diagram-design"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "economist-style@economist-style-plugins": true,
+    "diagram-design@diagram-design": true
   }
 }
