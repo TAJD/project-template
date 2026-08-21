@@ -4,8 +4,7 @@ import path from 'node:path';
 import { routes as staticRoutes } from '../src/seo.config.ts';
 // See generate-sitemap.mjs for why this script reads blog frontmatter off
 // disk instead of importing the blog module directly.
-import { loadPublishedBlogEntries } from './lib/blog-content.mjs';
-import { buildBlogRoutes } from '../src/modules/blog/build-routes.ts';
+import { loadPublishedBlogEntries, loadBlogRoutes } from './lib/blog-content.mjs';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const workerRoutesPath = path.resolve(
@@ -26,8 +25,8 @@ export function buildSpaRoutesFile(paths) {
   );
 }
 
-function main() {
-  const blogRoutes = buildBlogRoutes(loadPublishedBlogEntries(blogContentDir));
+async function main() {
+  const blogRoutes = await loadBlogRoutes(loadPublishedBlogEntries(blogContentDir));
   const routes = [...staticRoutes, ...blogRoutes];
   const content = buildSpaRoutesFile(routes.map((route) => route.path));
   writeFileSync(workerRoutesPath, content, 'utf-8');
@@ -35,5 +34,5 @@ function main() {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main();
+  await main();
 }

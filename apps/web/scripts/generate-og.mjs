@@ -7,8 +7,7 @@ import { Resvg } from '@resvg/resvg-js';
 import { routes as staticRoutes } from '../src/seo.config.ts';
 // See generate-sitemap.mjs for why this script reads blog frontmatter off
 // disk instead of importing the blog module directly.
-import { loadPublishedBlogEntries } from './lib/blog-content.mjs';
-import { buildBlogRoutes } from '../src/modules/blog/build-routes.ts';
+import { loadPublishedBlogEntries, loadBlogRoutes } from './lib/blog-content.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -108,7 +107,10 @@ async function renderPng(title, description) {
 async function main() {
   mkdirSync(ogDir, { recursive: true });
 
-  const routes = [...staticRoutes, ...buildBlogRoutes(loadPublishedBlogEntries(blogContentDir))];
+  const routes = [
+    ...staticRoutes,
+    ...(await loadBlogRoutes(loadPublishedBlogEntries(blogContentDir))),
+  ];
 
   for (const route of routes) {
     const png = await renderPng(route.title, route.description);
@@ -132,5 +134,5 @@ async function main() {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main();
+  await main();
 }
