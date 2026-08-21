@@ -1,0 +1,40 @@
+---
+title: Structured data without the headache
+description: How the shared package generates JSON-LD so every route stays search-engine friendly.
+pubDate: 2026-02-03
+draft: false
+tags: [seo, guide]
+faqs: []
+---
+
+## The problem with hand-written JSON-LD
+
+Copy-pasted `<script type="application/ld+json">` blocks drift from the page content they
+describe. Titles change, dates change, and the structured data quietly goes stale.
+
+## The fix: generate it from the same data
+
+`@template/shared` exports small generator functions — `article`, `faqPage`,
+`breadcrumbList`, `webSite` — that build a well-formed object from plain data you
+already have (frontmatter, route metadata, etc.). Nothing to keep in sync by hand.
+
+## Worked example
+
+```ts
+import { article } from '@template/shared';
+
+const jsonLd = article({
+  headline: 'Structured data without the headache',
+  datePublished: '2026-02-03',
+  author: 'Exemplar',
+  url: 'https://example.com/blog/structured-data-without-the-headache',
+});
+```
+
+## Task list for adopting it
+
+- [x] Generate JSON-LD from route metadata, not by hand
+- [x] Register routes through `registerRoutes()` so the sitemap picks them up
+- [ ] Wire per-post static prerendering (tracked separately)
+
+That's the whole pattern — plain data in, valid structured data out.

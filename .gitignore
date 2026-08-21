@@ -6,7 +6,9 @@ dist-ssr
 coverage
 *.tsbuildinfo
 *.local
+.dev.vars
 .DS_Store
 *.log
 .vscode/*
 !.vscode/extensions.json
+.playwright-mcp

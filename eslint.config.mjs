@@ -11,6 +11,12 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    files: ['apps/worker/scripts/**/*.mjs', 'apps/web/scripts/**/*.mjs', 'scripts/**/*.mjs'],
+    languageOptions: {
+      globals: { console: 'readonly', process: 'readonly', URL: 'readonly', fetch: 'readonly' },
+    },
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     plugins: {
       react,

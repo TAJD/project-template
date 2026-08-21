@@ -5,3 +5,5 @@ dist-ssr
 .turbo
 coverage
 pnpm-lock.yaml
+apps/worker/src/spa-routes.generated.ts
+.claude/settings.local.json

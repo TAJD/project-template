@@ -1,0 +1,54 @@
+@import '@fontsource-variable/inter';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --paper: #ffffff;
+  --ink: #1a1a1a;
+  --accent: #2563eb;
+  --muted: #6b7280;
+  --rule: #e5e7eb;
+  --elev: #f9fafb;
+  --win: #16a34a;
+  --error: #dc2626;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: #18181b;
+    --ink: #f4f4f5;
+    --accent: #60a5fa;
+    --muted: #a1a1aa;
+    --rule: #3f3f46;
+    --elev: #27272a;
+    --win: #4ade80;
+    --error: #f87171;
+  }
+}
+
+:root[data-theme='dark'] {
+  --paper: #18181b;
+  --ink: #f4f4f5;
+  --accent: #60a5fa;
+  --muted: #a1a1aa;
+  --rule: #3f3f46;
+  --elev: #27272a;
+  --win: #4ade80;
+  --error: #f87171;
+}
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter Variable', sans-serif;
+}
+
+/* MDX post bodies can contain GFM tables wider than the viewport; scroll the
+   table itself rather than letting it push the whole page into overflow. */
+.blog-content table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}

@@ -1,0 +1,78 @@
+# Deploy flow:
+#   - Automatic: Cloudflare Workers Builds triggers a deploy on every push to
+#     `main`, once a Workers Builds connection to this GitHub repo is
+#     configured in the Cloudflare dashboard (not set up by this template —
+#     requires a Cloudflare account and dashboard access).
+#   - Manual: run `pnpm run deploy` from the repo root. The `run` is required:
+#     bare `pnpm deploy` resolves to pnpm's own built-in deploy command, not
+#     this workspace's script. This builds the full
+#     workspace (so apps/web/dist exists for the [assets] binding below) and
+#     then runs `wrangler deploy` from this package. Requires a Cloudflare
+#     API token / `wrangler login` to be configured locally.
+
+name = "worker"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[assets]
+directory = "../web/dist"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+# Client-routed SPA paths (e.g. /tags/:tag, /draft/:slug) have no matching
+# asset. Without this, they fall through to the Worker, which only serves
+# /api/* and would 404 them. Routes the SEO registry knows about are
+# prerendered to their own dist/<path>/index.html and still win over this
+# fallback, so they keep their per-route <head>.
+not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "template-db"
+# Placeholder — stamped projects run `wrangler d1 create template-db` and
+# paste the real ID here (and in the Cloudflare dashboard binding for
+# deployed environments). Local `wrangler dev` and the test harness both
+# use a local/in-memory SQLite file regardless of this value.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+# TEST_AUTH_TOKEN (tier-1 test auth, PT-13) is deliberately NOT declared as a
+# var here. Declaring it would ship it with every `wrangler deploy`, which
+# would leave `isLocalRequest()` as the single gate standing between a real
+# deployment and a password-free login as any existing user. Keeping it
+# undeclared means a deployed Worker fails both gates independently:
+#   - local `wrangler dev`: copy `.dev.vars.example` to `.dev.vars`
+#   - tests: supplied via miniflare bindings in apps/worker/vitest.config.ts
+# Never `wrangler secret put TEST_AUTH_TOKEN`.
+
+# Native Workers Rate Limiting binding (poker-puzzle pattern, PT-3). Auth
+# routes key on client IP; see apps/worker/src/lib/rate-limit.ts.
+[[unsafe.bindings]]
+name = "AUTH_RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 10, period = 60 }
+
+# RESEND_API_KEY is a Worker secret, not a var here — set it with
+# `wrangler secret put RESEND_API_KEY` for real deployments only. Its
+# absence in every local/dev/CI environment is what keeps
+# apps/worker/src/lib/email.ts on DevMailboxSender and /api/dev/mailbox
+# live by default (see docs/modules/account.md).
+
+# Billing module (PT-14, see docs/modules/billing.md). No real values belong
+# in this repo — this template ships with no Stripe account. STRIPE_PRICE_ID
+# identifies a product, not a credential, so it's fine as a var; the two
+# below are Worker secrets, set only via `wrangler secret put`:
+#   wrangler secret put STRIPE_SECRET_KEY       # sk_test_... / sk_live_...
+#   wrangler secret put STRIPE_WEBHOOK_SECRET   # whsec_..., from the Stripe
+#                                                # dashboard's webhook endpoint
+#                                                # config or `stripe listen`
+#                                                # (see scripts/stripe-tunnel.mjs)
+# STRIPE_PRICE_ID = "price_..."
+
+[build]
+# `apply-d1-migrations-on-build.mjs` only runs `wrangler d1 migrations
+# apply` when the build is a Cloudflare Workers Builds run on `main` (see
+# that script for the exact env var it checks) — local `pnpm build` and PR
+# builds skip it, so every dev still runs `wrangler d1 migrations apply DB
+# --local` themselves once, same as any other local D1 setup.
+command = "node scripts/ensure-web-dist.mjs && node scripts/apply-d1-migrations-on-build.mjs"

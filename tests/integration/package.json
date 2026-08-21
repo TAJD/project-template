@@ -1,0 +1,16 @@
+{
+  "name": "@template/integration-tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.9.0",
+    "@cloudflare/workers-types": "^5.20260815.1",
+    "drizzle-orm": "^0.36.4",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.9"
+  }
+}

@@ -1,0 +1,14 @@
+# Copy to `.dev.vars` (gitignored) for local `wrangler dev`.
+# Wrangler loads `.dev.vars` for local runs only — it is never uploaded by
+# `wrangler deploy`, which is exactly why the tier-1 test-auth token lives
+# here instead of in wrangler.toml's [vars].
+TEST_AUTH_TOKEN=local-test-auth-token
+
+# Uncomment and fill in the ones your project actually uses. These are the
+# secrets `scripts/push-secrets.ps1` reads and pushes to the deployed Worker;
+# left commented, the script reports them as `skip`. TEST_AUTH_TOKEN above is
+# deliberately not in that list — it must never become a deployed secret.
+#RESEND_API_KEY=
+#STRIPE_SECRET_KEY=
+#STRIPE_WEBHOOK_SECRET=
+#TEST_LOGIN_SECRET=
