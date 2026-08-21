@@ -46,6 +46,20 @@ describe('GET /data/*', () => {
     expect(res.headers.get('access-control-expose-headers')).toContain('Content-Range');
   });
 
+  it('forces attachment disposition and blocks MIME sniffing, so a maliciously-typed object cannot render as this origin', async () => {
+    const bucket = env.DATA_BUCKET;
+    if (!bucket) throw new Error('DATA_BUCKET is not configured in the test environment');
+    await bucket.put('evil.txt', '<script>alert(document.cookie)</script>', {
+      httpMetadata: { contentType: 'text/html' },
+    });
+    const res = await run(new Request('http://localhost/data/evil.txt'));
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-disposition')).toBe('attachment; filename="evil.txt"');
+    expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(res.headers.get('content-security-policy')).toBe('sandbox');
+    await res.text();
+  });
+
   it('serves a closed byte range as 206 with Content-Range', async () => {
     await seed();
     const res = await run(

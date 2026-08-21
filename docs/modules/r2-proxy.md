@@ -47,6 +47,18 @@ size)`, no I/O. Returns `{ type: 'none' | 'single' | 'unsatisfiable' }`.
    `bucket_name`.
 3. Deploy. `DATA_BUCKET` is now bound and `/data/*` serves real objects.
 
+## Same-origin content safety
+
+This route serves whatever `Content-Type` was set when an object was written
+to R2, on the app's own origin — the same origin the auth module's session
+cookies live on. Every response forces `Content-Disposition: attachment`,
+`X-Content-Type-Options: nosniff`, and `Content-Security-Policy: sandbox`, so
+an object stored with (or overridden to) a renderable content-type like
+`text/html` can't execute as this origin if someone links or navigates to it
+directly. `attachment` only affects top-level navigation — it doesn't block
+subresource loads (`<video src>`, `<img src>`, `fetch()`), so this doesn't
+interfere with the module's own use cases.
+
 ## Cache-control
 
 Object keys under `snapshots/`, `events/`, or `raw/` — partitions this module

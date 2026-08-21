@@ -23,12 +23,25 @@ function cacheControlFor(key: string): string {
 // can't *read* them back off the response without this — the fetch silently
 // looks like it worked while every range-aware caller falls back to
 // whole-object reads.
+//
+// content-disposition/x-content-type-options/content-security-policy: this
+// route serves whatever content-type was set when an object was written to
+// R2, on the app's own origin. Without these, an object stored with e.g.
+// content-type: text/html would render (and execute) as this origin — same
+// cookie jar as the auth module's sessions — if anyone linked or navigated
+// to it directly. "attachment" only affects top-level navigation, not
+// subresource loads (<video src>, <img src>, fetch()), so it doesn't break
+// this module's own use cases (media scrubbing, duckdb-wasm reads).
 function baseHeaders(key: string, size: number, contentType: string, etag: string): HeadersInit {
+  const filename = key.slice(key.lastIndexOf('/') + 1).replace(/"/g, '');
   return {
     'accept-ranges': 'bytes',
     'access-control-allow-origin': '*',
     'access-control-expose-headers': 'Accept-Ranges, Content-Range, Content-Length',
     'content-type': contentType,
+    'content-disposition': `attachment; filename="${filename}"`,
+    'x-content-type-options': 'nosniff',
+    'content-security-policy': 'sandbox',
     'cache-control': cacheControlFor(key),
     etag,
   };
