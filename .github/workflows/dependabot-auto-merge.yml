@@ -1,0 +1,27 @@
+name: Dependabot auto-merge
+
+# Queues every Dependabot PR for auto-merge. GitHub then merges it only once
+# required status checks pass.
+#
+# Two repo settings make this work, and NEITHER is inherited by a project
+# stamped from this template — set them per repo:
+#   1. Settings > General > "Allow auto-merge".
+#   2. A branch protection rule (or ruleset) on `main` requiring the `check`
+#      status check.
+# Without (2) there is nothing to wait for and PRs merge immediately, CI
+# unread. See the new-project checklist.
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
